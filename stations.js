@@ -234,6 +234,9 @@ window.STATIONS = [
     // Public HTTPS stream listed by TDTChannels and radio directories in Nov 2026.
     // Browser playback and CORS still require end-to-end verification.
     url: "https://azura.abcorp.es/radio/8030/live",
+    // Optional: AzuraCast's public now-playing endpoint. Never guess a song
+    // if metadata is missing or cannot be read from the browser (CORS).
+    nowPlayingApi: "https://azura.abcorp.es/api/nowplaying",
     logo: "https://graph.facebook.com/GozaderaSpain/picture?width=200&height=200",
     site: "https://gozadera.es/" }
 ];
