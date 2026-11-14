@@ -77,7 +77,8 @@ Any static host works; GitHub Pages is described above.
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Dark, light and high-contrast themes; follows the system setting until the listener chooses
-- Search, type filters, favourites, add/remove your own stream URLs (kept in `localStorage`)
+- Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
+- 40 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Phone layout with large touch targets, safe-area support and lock-screen controls
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
@@ -146,10 +147,22 @@ Use the "Añadir" button (saved in that browser only) or edit `stations.js`:
 ```
 
 Follow the rules in the header of `stations.js`: official, freely accessible streams only, always
-with the broadcaster's website. Built-in stations should use HTTPS and permit anonymous CORS
-playback. Kiss FM is an exception: its official stream passes through a signed redirect, so
-OndaLibre uses ordinary browser audio playback (no CORS). Its streaming provider could send or
-set third-party cookies. No cookies are set by OndaLibre itself.
+with the broadcaster's website. The list includes national networks and regional broadcasters
+from Aragón, Asturias, Baleares, Canarias, Castilla-La Mancha, Cataluña, Extremadura, Galicia,
+the Basque Country and Andalusia. Use the **Regional** filter or a community name to narrow the
+list; each station also has a primary genre for local listening statistics.
+
+Streams were cross-referenced with broadcaster pages and the
+[TDTChannels radio directory](https://github.com/LaQuay/TDTChannels/blob/master/RADIO.md) in
+November 2026. These are public HTTPS stream endpoints from broadcasters and their delivery
+providers, **not audio files hosted by OndaLibre**. Availability, browser CORS support and any
+geographical limitations can change; the new streams have **not been playback-tested in a browser**
+from this environment. Stations requiring expiring tokens are deliberately excluded.
+
+Built-in stations should permit anonymous CORS playback. Kiss FM is an exception: its official
+stream passes through a signed redirect, so OndaLibre uses ordinary browser audio playback
+(no CORS). Its streaming provider could send or set third-party cookies. No cookies are set by
+OndaLibre itself.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
 
 ## Theming
