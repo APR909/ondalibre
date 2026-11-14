@@ -259,6 +259,18 @@
     select(station);
     setState("connecting");
 
+    // Native HLS is handled by the OS. On other mobiles, prefer a
+    // broadcaster-published continuous MP3/AAC alternative when available:
+    // JavaScript-driven HLS fetching may be suspended after screen lock.
+    const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
+    const originalHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
+    const useContinuous = originalHls && !nativeHls
+      && typeof station.backgroundUrl === "string"
+      && isHttpUrl(station.backgroundUrl)
+      && !/\.m3u8(\?|$)/i.test(station.backgroundUrl);
+    const streamUrl = useContinuous ? station.backgroundUrl : station.url;
+    const isHls = originalHls && !useContinuous;
+
     const fail = () => {
       if (me !== attempt) return;
       // Only for stations the listener added: retry once without CORS for servers that lack CORS headers.
@@ -266,8 +278,6 @@
       teardown();
       setState("error", station.site ? "Sin señal. Prueba más tarde o en la web oficial." : "Sin señal. Revisa la dirección.");
     };
-
-    const isHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
     const startPlayback = () => {
       if (me !== attempt) return;
       audio.play().catch((err) => {
@@ -285,27 +295,33 @@
     };
     if (anonymous) audio.crossOrigin = "anonymous"; else audio.removeAttribute("crossorigin");
 
-    // Prefer native HLS wherever supported: the OS can own the audio stream
-    // without relying on hls.js JavaScript fetching segments in the background.
-    const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
+    // Publish artwork and station identity before play(), so the OS can
+    // display lock-screen media controls as soon as the stream becomes active.
+    if ("mediaSession" in navigator && window.MediaMetadata) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: station.name, artist: "En directo", album: "OndaLibre",
+          artwork: [192, 512].map((n) => ({
+            src: new URL(`assets/icon-${n}.png`, document.baseURI).href,
+            sizes: `${n}x${n}`, type: "image/png"
+          }))
+        });
+      } catch { /* unsupported metadata does not block radio playback */ }
+    }
+
     if (isHls && !nativeHls && window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls();
       hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data.fatal) fail(); });
       // Do not call play() before hls.js has attached a supported media source.
       hls.on(window.Hls.Events.MANIFEST_PARSED, startPlayback);
       hls.attachMedia(audio);
-      hls.loadSource(station.url);
+      hls.loadSource(streamUrl);
     } else {
-      audio.src = station.url;           // MP3/AAC everywhere; HLS natively on Safari
+      audio.src = streamUrl;            // Direct MP3/AAC or OS-native HLS
       startPlayback();
     }
     audio.onerror = fail;
     timer = setTimeout(fail, 20000);
-
-    if ("mediaSession" in navigator && window.MediaMetadata) {
-      navigator.mediaSession.metadata = new MediaMetadata({ title: station.name, artist: "En directo", album: "OndaLibre",
-        artwork: [192, 512].map((n) => ({ src: new URL(`assets/icon-${n}.png`, document.baseURI).href, sizes: `${n}x${n}`, type: "image/png" })) });
-    }
   }
 
   function stop() { teardown(); setState("idle"); }
