@@ -49,6 +49,20 @@
       <a href="#" data-nav="home">Emisoras</a>
       <a href="#about" data-nav="about">Acerca de</a>
     </nav>
+    <details class="auth" id="authDetails">
+      <summary id="authSummary" aria-label="Cuenta: iniciar sesión con Google">Iniciar sesión</summary>
+      <div class="auth-panel">
+        <h2>Cuenta de Google</h2>
+        <p class="auth-hint">Opcional. Identifícate en este dispositivo; las favoritas siguen siendo locales.</p>
+        <div id="googleButton" class="google-button"></div>
+        <div id="authUser" hidden>
+          <p id="authName" class="auth-name"></p>
+          <p id="authEmail" class="auth-email"></p>
+          <button id="authSignOut" type="button" class="btn">Cerrar sesión</button>
+        </div>
+        <p id="authStatus" class="auth-status" role="status" aria-live="polite">El acceso requiere configurar un ID de cliente de Google.</p>
+      </div>
+    </details>
     <div class="themes" role="group" aria-label="Tema de color">
       <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
       <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
@@ -78,7 +92,7 @@
     <p class="lead">
       OndaLibre es un reproductor de radio en directo de código abierto. Reúne en una sola página las
       emisiones por internet que las propias emisoras españolas publican, y las reproduce directamente
-      en tu navegador: sin cuentas, sin anuncios añadidos, sin servidor intermedio ni cookies propias.
+      en tu navegador: sin cuentas obligatorias, sin anuncios añadidos, sin servidor intermedio ni cookies propias.
     </p>
 
     <h2>Cómo funciona</h2>
@@ -89,7 +103,8 @@
     </p>
     <p>
       Puedes marcar favoritas y añadir tus propias emisoras pegando la dirección de su emisión.
-      Todo eso se guarda únicamente en tu navegador.
+      Todo eso se guarda únicamente en tu navegador. También puedes iniciar sesión con Google opcionalmente
+      para mostrar tu perfil en esta página. El acceso no sincroniza las favoritas entre dispositivos.
     </p>
 
     <h2>Tecnología</h2>
@@ -121,6 +136,7 @@
     <h2>Privacidad</h2>
     <ul>
       <li>OndaLibre no establece cookies propias ni incorpora analítica o publicidad. Solo contacta con servidores de emisión cuando eliges una radio.</li>
+      <li>Si abres el panel de acceso con Google y está configurado, se carga Google Identity Services desde los servidores de Google. Al iniciar sesión, Google devuelve datos básicos de tu cuenta (nombre y correo) para mostrarlos en la interfaz. OndaLibre no guarda el token ni tu perfil y no dispone de una base de datos de usuarios. Google puede tratar datos conforme a su propia política de privacidad. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacidad de Google</a>.</li>
       <li>Tus preferencias se guardan solo en el almacenamiento local de tu navegador y nunca se envían a ningún sitio. Puedes borrarlas desde los ajustes del navegador.</li>
       <li>Al reproducir una emisora, tu navegador se conecta a los servidores de esa emisora o de su proveedor de emisión, que reciben tu dirección IP y los datos técnicos habituales de cualquier conexión web. Ese tratamiento corresponde a cada emisora y se rige por su propia política de privacidad.</li>
       <li>La mayoría de emisoras se reproducen en modo anónimo, sin enviar ni guardar cookies de sus servidores. Kiss FM requiere el modo de audio normal debido a su redirección de emisión; su proveedor podría utilizar cookies de terceros. La página no envía su URL de origen por la política de referencia.</li>
@@ -165,6 +181,7 @@
     <button type="button" class="ico" id="prev" aria-label="Emisora anterior"><svg><use href="#i-prev"/></svg></button>
     <button type="button" class="playbtn" id="play" aria-label="Reproducir" disabled><svg><use id="playIco" href="#i-play"/></svg></button>
     <button type="button" class="ico" id="next" aria-label="Emisora siguiente"><svg><use href="#i-next"/></svg></button>
+    <div class="eq-bars" id="eqBars" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
     <div class="now">
       <div class="now-name" id="nowName">Elige una emisora</div>
       <div class="now-state" id="nowState" role="status">Parado</div>
@@ -191,6 +208,8 @@
 <audio id="audio" preload="none"></audio>
 <script src="lib/hls.light.min.js"></script>
 <script src="stations.js"></script>
+<script src="auth-config.js"></script>
+<script src="auth.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
