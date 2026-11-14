@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: MIT — OndaLibre
  * Client-side live radio player. No backend or first-party cookies.
- * External streaming hosts are contacted only when a station is played.
+ * Streaming hosts are contacted on playback; station artwork is loaded lazily
+ * from third-party providers as each station comes into view.
  */
 (() => {
   "use strict";
@@ -61,6 +62,30 @@
     use.setAttribute("href", "#" + id);
     svg.append(use);
     return svg;
+  }
+
+  /* ---------- station identification artwork ---------- */
+  // External brand assets are only linked, not bundled or covered by MIT.
+  // A text identifier remains visible if a host blocks hotlinking.
+  function stationArtwork(station, eager = false) {
+    const wrap = el("span", { class: "station-art", "aria-hidden": "true" });
+    const initials = String(station.name || "Radio").trim()
+      .split(/\s+/).slice(0, 2).map((w) => w.charAt(0)).join("").toUpperCase() || "FM";
+    wrap.append(el("span", { class: "station-art-fallback", text: initials }));
+    if (typeof station.logo === "string") {
+      let safeUrl = null;
+      try {
+        const url = new URL(station.logo);
+        if (url.protocol === "https:" && !url.username && !url.password) safeUrl = url.href;
+      } catch { /* absent or invalid logo: use initials */ }
+      if (safeUrl) {
+        const img = el("img", { src: safeUrl, alt: "", loading: eager ? "eager" : "lazy",
+          decoding: "async", referrerpolicy: "no-referrer" });
+        img.addEventListener("error", () => img.remove(), { once: true });
+        wrap.append(img);
+      }
+    }
+    return wrap;
   }
 
   /* ---------- theme ---------- */
@@ -128,6 +153,7 @@
       li.append(
         el("button", { type: "button", class: "st-main" },
           icon("i-play"),
+          stationArtwork(s),
           el("span", { class: "st-txt" },
             el("span", { class: "st-name", text: s.name }),
             el("span", { class: "st-desc", text: s.desc || "Añadida por ti" })),
@@ -209,6 +235,9 @@
     save(KEY.last, station.id);
     $("#play").disabled = false;
     $("#nowName").textContent = station.name;
+    const playerArt = $("#nowArt");
+    playerArt.replaceChildren(stationArtwork(station, true));
+    playerArt.hidden = false;
   }
 
   /* anonymous = CORS mode without credentials: the stream server's cookies are neither sent nor stored. */
@@ -339,7 +368,11 @@
       if (onlyFavs) renderList();
       else e.target.closest(".st-fav").setAttribute("aria-pressed", String(favs.has(s.id)));
     } else if (e.target.closest(".st-del")) {
-      if (current && current.id === s.id) { stop(); current = null; $("#play").disabled = true; $("#nowName").textContent = "Elige una emisora"; }
+      if (current && current.id === s.id) {
+        stop(); current = null; $("#play").disabled = true;
+        $("#nowName").textContent = "Elige una emisora";
+        $("#nowArt").replaceChildren(); $("#nowArt").hidden = true;
+      }
       custom = custom.filter((x) => x.id !== s.id);
       favs.delete(s.id);
       save(KEY.custom, custom); save(KEY.favs, [...favs]);
@@ -368,9 +401,24 @@
   $("#next").addEventListener("click", () => step(1));
 
   const vol = $("#vol");
+  const volValue = $("#volValue");
   vol.value = Math.min(100, Math.max(0, Number(load(KEY.vol, 80)) || 0));
+  const syncVolume = () => {
+    const amount = Math.max(0, Math.min(100, Math.round(Number(audio.volume) * 100)));
+    const percentage = (audio.muted ? 0 : amount) + "%";
+    vol.value = String(amount);
+    volValue.textContent = percentage;
+    vol.setAttribute("aria-valuetext", percentage);
+  };
   audio.volume = vol.value / 100;
-  vol.addEventListener("input", () => { audio.volume = vol.value / 100; save(KEY.vol, Number(vol.value)); });
+  vol.addEventListener("input", () => {
+    audio.muted = false;
+    audio.volume = Number(vol.value) / 100;
+    save(KEY.vol, Number(vol.value));
+    syncVolume();
+  });
+  audio.addEventListener("volumechange", syncVolume);
+  syncVolume();
 
   document.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || $("#dlg").open) return;
