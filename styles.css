@@ -219,3 +219,72 @@ dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20
   .themes { gap: 14px; }
   .st-main svg { display: none; }
 }
+
+
+/* ---------- small decorative playback equalizer ---------- */
+/* Deliberately not an audio analyser: signed or opaque streams can prohibit
+   Web Audio sampling. Animation follows actual media playback events. */
+.eq-bars {
+  flex: none; display: flex; align-items: center; justify-content: center; gap: 3px;
+  width: 24px; height: 22px; margin-left: 6px; color: var(--muted); opacity: .45;
+}
+.eq-bars span {
+  display: block; width: 3px; height: 18px; border-radius: 3px;
+  background: currentColor; transform-origin: center;
+  transform: scaleY(.25);
+}
+.eq-bars span:nth-child(2) { transform: scaleY(.5); }
+.eq-bars span:nth-child(3) { transform: scaleY(.35); }
+.eq-bars span:nth-child(4) { transform: scaleY(.65); }
+.player[data-playing="true"] .eq-bars { color: var(--accent); opacity: 1; }
+.player[data-playing="true"] .eq-bars span {
+  animation: radio-bars 720ms ease-in-out infinite alternate;
+}
+.player[data-playing="true"] .eq-bars span:nth-child(2) { animation-duration: 490ms; animation-delay: -180ms; }
+.player[data-playing="true"] .eq-bars span:nth-child(3) { animation-duration: 630ms; animation-delay: -360ms; }
+.player[data-playing="true"] .eq-bars span:nth-child(4) { animation-duration: 850ms; animation-delay: -120ms; }
+@keyframes radio-bars {
+  0% { transform: scaleY(.18); }
+  55% { transform: scaleY(.75); }
+  100% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .player[data-playing="true"] .eq-bars span { animation: none; }
+  .player[data-playing="true"] .eq-bars span:nth-child(1) { transform: scaleY(.65); }
+  .player[data-playing="true"] .eq-bars span:nth-child(2) { transform: scaleY(1); }
+  .player[data-playing="true"] .eq-bars span:nth-child(3) { transform: scaleY(.45); }
+  .player[data-playing="true"] .eq-bars span:nth-child(4) { transform: scaleY(.8); }
+}
+
+/* ---------- optional Google account ---------- */
+.auth { position: relative; align-self: center; font-size: .875rem; }
+.auth summary {
+  list-style: none; cursor: pointer; white-space: nowrap; color: var(--muted);
+  padding: 7px 10px; border: var(--bw) solid var(--line); border-radius: 6px;
+  max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+}
+.auth summary::-webkit-details-marker { display: none; }
+.auth[open] summary, .auth summary:hover { color: var(--text); border-color: var(--muted); }
+.auth-panel {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 20;
+  width: 276px; max-width: calc(100vw - 36px);
+  background: var(--surface); color: var(--text);
+  border: var(--bw) solid var(--line); border-radius: 9px; padding: 16px;
+  box-shadow: 0 14px 42px rgb(0 0 0 / .25);
+}
+.auth-panel h2 { font-size: 1rem; line-height: 1.25; margin: 0 0 8px; }
+.auth-hint, .auth-status, .auth-email {
+  font-size: .8125rem; color: var(--muted); line-height: 1.4;
+}
+.auth-hint { margin: 0 0 12px; }
+.auth-status { margin: 10px 0 0; }
+.google-button { min-height: 0; }
+.auth-name { margin: 8px 0 3px; font-weight: 700; overflow-wrap: anywhere; }
+.auth-email { margin: 0 0 12px; overflow-wrap: anywhere; }
+.auth #authSignOut { margin-top: 2px; }
+@media (max-width: 600px) {
+  .auth { margin-left: auto; }
+  .auth-panel { right: 0; }
+  .eq-bars { margin-left: 2px; width: 21px; gap: 2px; }
+  .now { margin-left: 5px; }
+}
