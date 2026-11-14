@@ -60,9 +60,14 @@ A purely personal, non-commercial page is outside the LSSI. Once there is any ec
 About view needs a real contact so takedown requests can reach you; it currently shows a placeholder.
 
 ### 2.6 Cookies and local storage — review the Kiss FM exception
-`localStorage` holds only settings the listener sets (theme, volume, favourites, own stations, last
-station). Storage strictly needed for a feature the user asked for is exempt from consent under
-LSSI art. 22.2, so no banner is needed. Adding analytics, ads or embeds would change that.
+`localStorage` holds device preferences (theme, volume, favourites, own stations and last
+station). For signed-in users, it additionally stores per-account listening history under a
+SHA-256-derived pseudonymous key, with radio names, primary genres and approximate playback
+seconds. Google tokens, names, emails and raw account subject identifiers are not persisted with
+the history. History stays on the device and is deleted on explicit request or when browser data
+is cleared; sign-out only hides it. Storage and consent requirements must be reviewed for this
+optional functionality under LSSI art. 22.2 and applicable privacy law; this note is not a
+legal determination. Adding remote analytics, ads or embeds would require further review.
 
 ### 2.7 Personal data — small residual
 - Your web host logs visitor IP addresses. On GitHub Pages that host is GitHub, which may store
@@ -78,6 +83,11 @@ LSSI art. 22.2, so no banner is needed. Adding analytics, ads or embeds would ch
   affects streams the listener chose to add.
 
 ### 2.8 Optional Google Identity Services
+- Two local listening-statistics tabs (radios and genres) become available after Google login.
+  No statistics are recorded for signed-out listeners. Their percentages reflect approximate
+  time played on this browser, not global user popularity. A local clear-history control is
+  provided, and the raw Google identifier is not saved. Local data is neither protected by
+  server authentication nor synchronized across devices.
 - The Google login panel is optional. The Google JS SDK is fetched only when the visitor opens
   the panel and an OAuth web client ID has been configured. Google may process account data and
   use its own cookies/identifiers. The About view must continue explaining this interaction.
