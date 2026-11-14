@@ -53,11 +53,34 @@ and a native-HLS station if available. Incoming calls, battery-saving policies, 
 connectivity and OS process eviction can still stop playback. If one station fails, try a different
 stream format before assuming every radio is affected.
 
-To avoid breaking system media controls, an external Pause now **keeps the station media attached**;
+To avoid breaking system media controls, an external Pause **keeps the station media attached**;
 Play attempts to resume the existing element without recreating the stream. Explicit Stop still
 releases it. Where supported, the experimental Audio Session API is configured for `playback`.
-These behaviors have been verified in JavaScript simulations; actual locked-phone playback must
-be checked on devices.
+The lock-screen media metadata is registered before starting playback.
+
+On Android and other browsers without native HLS, **Radio Nacional**, **Radio 5** and **Onda Cero**
+prefer published continuous MP3/AAC streams, because HLS.js needs ongoing JavaScript to fetch
+segments and may stop when the browser is backgrounded. The original HLS stream is retried if the
+alternative fails. The Radio Nacional / Radio 5 MP3 sources include **Andalusian territorial
+broadcasts**, which may differ briefly from their national main feeds. Other HLS-only stations
+may remain unreliable in the background on browsers without native HLS.
+
+**If sound stops with the screen off:**
+- **Android:** try Chrome, start playback with a tap while the page is visible, then lock the
+  screen. Check Android Settings → Apps → Chrome (or OndaLibre) → Battery → allow background use.
+  Disable Battery Saver for this test. Exact menus vary by phone manufacturer. If the installed
+  shortcut fails, compare with a normal Chrome tab.
+- **iPhone:** try the same station in Safari before testing the home-screen web app. Safari/WebKit
+  may suspend web-app audio and has had PWA audio regressions in iOS 26. There is no universal
+  permission switch in a web manifest to enable iOS background execution.
+- Compare **Rock FM** (direct MP3) with **Radio Nacional** (native HLS on Safari; continuous MP3
+  on browsers without native HLS). This separates stream-format issues from device restrictions.
+
+**No browser-only solution can guarantee uninterrupted locked-screen audio on every device.**
+For guaranteed native background execution on iOS, the app would need to be packaged as a native
+iOS app with the appropriate Background Audio entitlement and audio session configuration.
+These playback code paths have been tested using JavaScript simulations; a real device test is
+still required.
 
 ## Run it
 
