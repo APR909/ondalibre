@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: MIT — OndaLibre
- * Client-side live radio player. No backend, no cookies, no third-party requests
- * other than the audio stream of the station the listener chooses.
+ * Client-side live radio player. No backend or first-party cookies.
+ * External streaming hosts are contacted only when a station is played.
  */
 (() => {
   "use strict";
@@ -179,7 +179,10 @@
   }
 
   /* anonymous = CORS mode without credentials: the stream server's cookies are neither sent nor stored. */
-  function connect(station, anonymous = true) {
+  // A few broadcasters (currently Kiss FM) use signed streaming redirects that
+  // cannot be played in CORS mode. They use ordinary HTML audio without CORS.
+  // This may allow the broadcaster to read/set its own third-party cookies.
+  function connect(station, anonymous = station.cors !== "no-cors") {
     teardown();
     const me = attempt;
     select(station);
