@@ -47,13 +47,15 @@
     </a>
     <nav aria-label="Secciones">
       <a href="#" data-nav="home">Emisoras</a>
+      <a href="#stats-radios" data-nav="stats-radios" data-account-only hidden>Mis radios</a>
+      <a href="#stats-genres" data-nav="stats-genres" data-account-only hidden>Mis géneros</a>
       <a href="#about" data-nav="about">Acerca de</a>
     </nav>
     <details class="auth" id="authDetails">
       <summary id="authSummary" aria-label="Cuenta: iniciar sesión con Google">Iniciar sesión</summary>
       <div class="auth-panel">
         <h2>Cuenta de Google</h2>
-        <p class="auth-hint">Opcional. Identifícate en este dispositivo; las favoritas siguen siendo locales.</p>
+        <p class="auth-hint">Opcional. Accede para ver tus estadísticas personales de escucha, guardadas solo en este navegador.</p>
         <div id="googleButton" class="google-button"></div>
         <div id="authUser" hidden>
           <p id="authName" class="auth-name"></p>
@@ -104,7 +106,8 @@
     <p>
       Puedes marcar favoritas y añadir tus propias emisoras pegando la dirección de su emisión.
       Todo eso se guarda únicamente en tu navegador. También puedes iniciar sesión con Google opcionalmente
-      para mostrar tu perfil en esta página. El acceso no sincroniza las favoritas entre dispositivos.
+      para mostrar tu perfil en esta página y consultar tus radios y géneros más escuchados
+      en este navegador. El acceso no sincroniza las favoritas ni las estadísticas entre dispositivos.
     </p>
 
     <h2>Tecnología</h2>
@@ -120,7 +123,7 @@
       <dt>Media Session API</dt>
       <dd>Conecta con las teclas multimedia y los controles de la pantalla de bloqueo. El indicador de barras de la parte inferior se anima cuando hay sonido en reproducción.</dd>
       <dt>localStorage</dt>
-      <dd>Guarda en tu dispositivo el tema, el volumen, las favoritas, las emisoras añadidas y la última emisora escuchada.</dd>
+      <dd>Guarda en tu dispositivo el tema, el volumen, las favoritas, las emisoras añadidas, la última emisora y, si inicias sesión, las estadísticas locales de escucha.</dd>
       <dt>Propiedades personalizadas de CSS</dt>
       <dd>Tres temas (oscuro, claro y alto contraste) que por defecto siguen la preferencia del sistema. Tipografía del sistema: no se descargan fuentes.</dd>
       <dt>Alojamiento estático</dt>
@@ -140,6 +143,7 @@
       <li>OndaLibre no establece cookies propias ni incorpora analítica o publicidad. Solo contacta con servidores de emisión cuando eliges una radio.</li>
       <li>Si abres el panel de acceso con Google y está configurado, se carga Google Identity Services desde los servidores de Google. Al iniciar sesión, Google devuelve datos básicos de tu cuenta (nombre y correo) para mostrarlos en la interfaz. OndaLibre no guarda el token ni tu perfil y no dispone de una base de datos de usuarios. Google puede tratar datos conforme a su propia política de privacidad. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacidad de Google</a>.</li>
       <li>Tus preferencias se guardan solo en el almacenamiento local de tu navegador y nunca se envían a ningún sitio. Puedes borrarlas desde los ajustes del navegador.</li>
+      <li>Si inicias sesión, se registra el tiempo de reproducción por emisora y género en el almacenamiento local de este navegador, separado por un identificador derivado de tu cuenta de Google. No se guarda tu correo, identificador original ni token de acceso junto a las estadísticas. No se comparten, no se sincronizan entre dispositivos y puedes borrarlas desde las pestañas «Mis radios» y «Mis géneros». Al cerrar sesión se ocultan, pero permanecen en este dispositivo hasta que las borres.</li>
       <li>Al reproducir una emisora, tu navegador se conecta a los servidores de esa emisora o de su proveedor de emisión, que reciben tu dirección IP y los datos técnicos habituales de cualquier conexión web. Ese tratamiento corresponde a cada emisora y se rige por su propia política de privacidad.</li>
       <li>La mayoría de emisoras se reproducen en modo anónimo, sin enviar ni guardar cookies de sus servidores. Kiss FM requiere el modo de audio normal debido a su redirección de emisión; su proveedor podría utilizar cookies de terceros. La página no envía su URL de origen por la política de referencia.</li>
       <li>Las emisoras que añadas tú se intentan primero del mismo modo. Si su servidor no lo admite, se reproducen en modo normal y ese servidor podría usar sus propias cookies.</li>
@@ -174,6 +178,27 @@
       <code>lib/</code>. La licencia cubre el código, no las marcas ni las emisiones de las emisoras.
     </p>
     <p><a href="#">← Volver a las emisoras</a></p>
+  </main>
+
+  <!-- ============ Personal listening charts (Google sign-in required) ============ -->
+  <main id="stats-radios" class="stats-page" aria-labelledby="statsRadiosTitle">
+    <p class="stats-eyebrow">Tu actividad · este navegador</p>
+    <h1 id="statsRadiosTitle">Radios más escuchadas</h1>
+    <p class="stats-intro">Porcentaje del tiempo total de reproducción de cada emisora desde que iniciaste el seguimiento. No cuenta las conexiones ni las pausas.</p>
+    <p id="statsRadiosTotal" class="stats-total" aria-live="polite">Todavía no hay escuchas registradas.</p>
+    <ol id="statsRadiosList" class="stats-list" aria-label="Clasificación de emisoras por tiempo escuchado"></ol>
+    <p class="stats-note">Solo para la cuenta iniciada en este dispositivo. Los porcentajes se calculan sobre el tiempo total escuchado y no se sincronizan.</p>
+    <button type="button" class="btn stats-clear" data-clear-stats>Borrar mis estadísticas</button>
+  </main>
+
+  <main id="stats-genres" class="stats-page" aria-labelledby="statsGenresTitle">
+    <p class="stats-eyebrow">Tu actividad · este navegador</p>
+    <h1 id="statsGenresTitle">Géneros más escuchados</h1>
+    <p class="stats-intro">Distribución del tiempo escuchado por el género principal de cada emisora. Las radios personalizadas se agrupan como «Personalizadas».</p>
+    <p id="statsGenresTotal" class="stats-total" aria-live="polite">Todavía no hay escuchas registradas.</p>
+    <ol id="statsGenresList" class="stats-list" aria-label="Clasificación de géneros por tiempo escuchado"></ol>
+    <p class="stats-note">Las estadísticas se guardan en este navegador, sin enviarlas a OndaLibre ni a Google.</p>
+    <button type="button" class="btn stats-clear" data-clear-stats>Borrar mis estadísticas</button>
   </main>
 </div>
 
@@ -213,5 +238,6 @@
 <script src="auth-config.js"></script>
 <script src="auth.js"></script>
 <script src="app.js"></script>
+<script src="stats.js"></script>
 </body>
 </html>
