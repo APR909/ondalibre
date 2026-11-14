@@ -9,9 +9,9 @@ beyond a personal project, have a lawyer confirm sections 2.1 and 2.5.
 | # | Problem in the previous version | Why it mattered | Fix |
 |---|---|---|---|
 | 1 | hls.js was loaded from the jsDelivr CDN | Every visitor's IP address went to a third party with no notice (GDPR arts. 5 and 13) | Library is now bundled in `lib/`; loading the page contacts only your own host |
-| 2 | Stream servers could set cookies. Triton/StreamTheWorld (SER, LOS40, Dial, Radiolé, Onda Cero) sends a `uuid` identifier cookie | Third-party identifier cookies need prior consent (LSSI art. 22.2) | Built-in streams are requested in CORS anonymous mode, so cookies are neither sent nor stored. Tested: 0 cookies after playing every station. `no-referrer` also hides the page address from stream servers |
+| 2 | Stream servers could set cookies. Some providers send identifying cookies | Third-party identifier cookies may require consent under LSSI art. 22.2 | Most built-in streams use CORS anonymous mode; Kiss FM instead requires normal media mode and its server could set cookies. The privacy notice discloses this exception; assess consent requirements before publication. `no-referrer` hides the page address from stream servers |
 | 3 | Radio MARCA was linked by a direct URL, while its official source is served through a geo-block endpoint | Linking around an access restriction counts as a new communication to the public (CJEU, VG Bild-Kunst, C-392/19) | Station removed |
-| 4 | Several URLs pointed at numbered relay servers that rotate; MáximaFM, iCat and Canal Sur returned errors | Broken, and not the broadcaster's published entry point | Replaced with the broadcasters' own entry points; MáximaFM removed. Kiss FM removed because it only plays through an ad-handler redirect that fails in anonymous mode |
+| 4 | Several URLs pointed at numbered relay servers that rotate; MáximaFM, iCat and Canal Sur returned errors | Broken, and not the broadcaster's published entry point | Replaced with broadcasters' own entry points; MáximaFM removed. Kiss FM was later re-added using its ad-handler redirect with an explicit non-CORS media exception |
 | 5 | No privacy information, no non-affiliation statement, no takedown route | Transparency duty (GDPR art. 13); the link safe harbour depends on acting when notified (LSSI art. 17) | "Acerca de" view with privacy, legal notice and takedown sections |
 | 6 | Stations had no visible link to the broadcaster | Attribution, and it makes clear the site is a directory | Every row links to the official website |
 | 7 | Player icons used the same path data as Material Icons (Apache-2.0) with no attribution; favicon was an emoji glyph | Minor licence-hygiene issue | Icons redrawn for this project; favicon is an original SVG |
@@ -59,7 +59,7 @@ A purely personal, non-commercial page is outside the LSSI. Once there is any ec
 (ads, donations, sponsorship) you must show your name, tax ID, address and e-mail. Either way, the
 About view needs a real contact so takedown requests can reach you; it currently shows a placeholder.
 
-### 2.6 Cookies and local storage — compliant as built
+### 2.6 Cookies and local storage — review the Kiss FM exception
 `localStorage` holds only settings the listener sets (theme, volume, favourites, own stations, last
 station). Storage strictly needed for a feature the user asked for is exempt from consent under
 LSSI art. 22.2, so no banner is needed. Adding analytics, ads or embeds would change that.
@@ -70,6 +70,9 @@ LSSI art. 22.2, so no banner is needed. Adding analytics, ads or embeds would ch
   mentions it in general terms; name the host there if you want to be thorough.
 - When a listener plays a station, the broadcaster's servers see the listener's IP address. That is
   inherent in direct playback and is disclosed.
+- Built-in Kiss FM uses normal audio mode because its broadcaster issues a signed stream URL via a
+  redirect; the streaming provider could set or read third-party cookies when the listener chooses it.
+  Review applicable consent requirements before deploying this exception.
 - Stations a listener adds are tried in anonymous mode first; if their server lacks CORS headers the
   player falls back to normal mode, where that server could set cookies. This is disclosed and only
   affects streams the listener chose to add.
