@@ -15,8 +15,18 @@
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } };
 
   /* ---------- state ---------- */
-  const favs = new Set(load(KEY.favs, []));
-  let custom = load(KEY.custom, []).filter((s) => s && s.id && s.name && isHttpUrl(s.url));
+  const savedFavs = load(KEY.favs, []);
+  const favs = new Set(Array.isArray(savedFavs) ? savedFavs.filter((id) => typeof id === "string") : []);
+  const savedCustom = load(KEY.custom, []);
+  let custom = (Array.isArray(savedCustom) ? savedCustom : [])
+    .filter((s) => s && typeof s.id === "string" && typeof s.name === "string"
+      && s.name.trim() && typeof s.url === "string" && isHttpUrl(s.url))
+    .map((s) => ({
+      ...s,
+      tags: Array.isArray(s.tags) ? s.tags.filter((tag) => typeof tag === "string").slice(0, 10) : ["Mías"],
+      desc: typeof s.desc === "string" ? s.desc : "Añadida por ti",
+      genre: typeof s.genre === "string" && s.genre ? s.genre : "Personalizadas"
+    }));
   let tag = "Todas";
   let onlyFavs = false;
   let query = "";
@@ -25,6 +35,7 @@
   let hls = null;
   let attempt = 0;           // increments on every (re)connect; stale callbacks are ignored
   let timer = 0;
+  let needsGesture = false; // HLS manifest loaded but browser requires another play tap
 
   const all = () => [...window.STATIONS, ...custom];
   const isCustom = (s) => custom.includes(s);
@@ -185,6 +196,7 @@
 
   function teardown() {
     clearTimeout(timer);
+    needsGesture = false;
     attempt++;
     if (hls) { hls.destroy(); hls = null; }
     audio.pause();
@@ -218,6 +230,21 @@
     };
 
     const isHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
+    const startPlayback = () => {
+      if (me !== attempt) return;
+      audio.play().catch((err) => {
+        if (me !== attempt || (err && err.name === "AbortError")) return;
+        if (err && err.name === "NotAllowedError") {
+          // The HLS manifest is loaded asynchronously. Some browsers require
+          // a fresh user gesture, so keep the media attached for the next tap.
+          clearTimeout(timer);
+          needsGesture = true;
+          setState("idle", "Pulsa Reproducir otra vez");
+          return;
+        }
+        fail();
+      });
+    };
     if (anonymous) audio.crossOrigin = "anonymous"; else audio.removeAttribute("crossorigin");
 
     // iPhone/iPad/Safari play HLS natively, which is lighter and keeps playing in the background.
@@ -225,13 +252,15 @@
     if (isHls && !nativeHls && window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls();
       hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data.fatal) fail(); });
-      hls.loadSource(station.url);
+      // Do not call play() before hls.js has attached a supported media source.
+      hls.on(window.Hls.Events.MANIFEST_PARSED, startPlayback);
       hls.attachMedia(audio);
+      hls.loadSource(station.url);
     } else {
       audio.src = station.url;           // MP3/AAC everywhere; HLS natively on Safari
+      startPlayback();
     }
     audio.onerror = fail;
-    audio.play().catch((err) => { if (err && err.name !== "AbortError") fail(); });
     timer = setTimeout(fail, 20000);
 
     if ("mediaSession" in navigator && window.MediaMetadata) {
@@ -243,7 +272,29 @@
   function stop() { teardown(); setState("idle"); }
   function toggle() {
     if (!current) return;
-    if (state === "live" || state === "connecting") stop(); else connect(current);
+    if (state === "live" || state === "connecting") { stop(); return; }
+    if (needsGesture && hls) {
+      needsGesture = false;
+      setState("connecting");
+      const me = attempt;
+      audio.play().catch((err) => {
+        if (me !== attempt || (err && err.name === "AbortError")) return;
+        if (err && err.name === "NotAllowedError") {
+          needsGesture = true;
+          setState("idle", "Pulsa Reproducir otra vez");
+        } else {
+          teardown();
+          setState("error", "Sin señal. Prueba más tarde.");
+        }
+      });
+      timer = setTimeout(() => {
+        if (me !== attempt || state !== "connecting") return;
+        teardown();
+        setState("error", "Sin señal. Prueba más tarde.");
+      }, 20000);
+      return;
+    }
+    connect(current);
   }
   function step(dir) {
     const list = visible().length ? visible() : all();
