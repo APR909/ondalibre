@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT — OndaLibre -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="dark light">
+<title>OndaLibre · radio en directo</title>
+<meta name="description" content="Reproductor de radio en directo de código abierto. Sin servidor, sin cuentas, sin cookies.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="OndaLibre · radio en directo">
+<meta property="og:description" content="Reproductor de radio en directo de código abierto. Sin servidor, sin cuentas, sin cookies.">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OndaLibre">
+<script src="theme.js"></script>
+<link rel="stylesheet" href="styles.css">
+<noscript><style>#about{display:block!important}#home,.player,.themes{display:none!important}</style></noscript>
+</head>
+<body>
+
+<!-- Icons: drawn for this project (MIT), no third-party icon set. -->
+<svg hidden aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+  <symbol id="i-prev" viewBox="0 0 24 24"><rect x="5" y="5" width="2.5" height="14"/><path d="M19 5v14L9 12z"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><rect x="16.5" y="5" width="2.5" height="14"/><path d="M5 5v14l10-7z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><polygon points="12,3 14.6,9.2 21.3,9.7 16.2,14.1 17.8,20.6 12,17.1 6.2,20.6 7.8,14.1 2.7,9.7 9.4,9.2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M8 16 16 8M9.5 8H16v6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M7 7l10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#">
+      <svg class="mark" viewBox="11 6 44 52" aria-hidden="true">
+        <g fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round">
+          <path d="M28.9 22.1a14 14 0 0 1 0 19.8"/><path d="M35.26 15.74a23 23 0 0 1 0 32.52"/><path d="M41.63 9.37a32 32 0 0 1 0 45.26"/>
+        </g>
+        <circle class="mark-dot" cx="19" cy="32" r="6"/>
+      </svg>
+      <span>Onda<b>Libre</b></span>
+    </a>
+    <nav aria-label="Secciones">
+      <a href="#" data-nav="home">Emisoras</a>
+      <a href="#about" data-nav="about">Acerca de</a>
+    </nav>
+    <div class="themes" role="group" aria-label="Tema de color">
+      <button type="button" data-theme-btn="dark" aria-pressed="false">Oscuro</button>
+      <button type="button" data-theme-btn="light" aria-pressed="false">Claro</button>
+      <button type="button" data-theme-btn="contrast" aria-pressed="false">Alto contraste</button>
+    </div>
+  </header>
+
+  <!-- ============ Stations ============ -->
+  <main id="home">
+    <h1 class="sr">Emisoras en directo</h1>
+    <div class="tools">
+      <input id="q" class="input" type="search" placeholder="Buscar…" aria-label="Buscar emisora" autocomplete="off">
+      <button type="button" class="btn" id="btnFav" aria-pressed="false">Favoritas</button>
+      <button type="button" class="btn" id="btnAdd">Añadir</button>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por tipo"></div>
+    <ul class="list" id="list"></ul>
+    <p class="note">
+      Los enlaces llevan a las emisiones oficiales de cada emisora. OndaLibre no aloja ni retransmite audio
+      y no está afiliada a ninguna de ellas. <a href="#about">Más información</a>.
+    </p>
+  </main>
+
+  <!-- ============ About ============ -->
+  <main id="about" class="prose">
+    <h1>Acerca de OndaLibre</h1>
+    <p class="lead">
+      OndaLibre es un reproductor de radio en directo de código abierto. Reúne en una sola página las
+      emisiones por internet que las propias emisoras españolas publican, y las reproduce directamente
+      en tu navegador: sin cuentas, sin anuncios añadidos, sin servidor intermedio y sin cookies.
+    </p>
+
+    <h2>Cómo funciona</h2>
+    <p>
+      La página es un directorio de enlaces. Cuando eliges una emisora, tu navegador se conecta
+      directamente al servidor de emisión de esa emisora y reproduce el audio tal cual lo emite,
+      incluida su publicidad. OndaLibre no recibe, almacena, graba, modifica ni redistribuye el sonido.
+    </p>
+    <p>
+      Puedes marcar favoritas y añadir tus propias emisoras pegando la dirección de su emisión.
+      Todo eso se guarda únicamente en tu navegador.
+    </p>
+
+    <h2>Tecnología</h2>
+    <dl class="tech">
+      <dt>HTML, CSS y JavaScript</dt>
+      <dd>Sin frameworks, sin compilación y sin dependencias de servidor. El código se entrega sin minificar para que pueda leerse y copiarse.</dd>
+      <dt>Elemento <code>&lt;audio&gt;</code></dt>
+      <dd>Reproduce de forma nativa las emisiones MP3 y AAC (Icecast / SHOUTcast).</dd>
+      <dt>hls.js 1.6.13</dt>
+      <dd>Reproduce emisiones HLS (<code>.m3u8</code>) mediante Media Source Extensions en los navegadores que no las admiten de forma nativa. Es la única biblioteca externa, con licencia Apache-2.0, y se sirve desde esta misma página, no desde una CDN.</dd>
+      <dt>Media Session API</dt>
+      <dd>Conecta con las teclas multimedia y los controles de la pantalla de bloqueo.</dd>
+      <dt>localStorage</dt>
+      <dd>Guarda en tu dispositivo el tema, el volumen, las favoritas, las emisoras añadidas y la última emisora escuchada.</dd>
+      <dt>Propiedades personalizadas de CSS</dt>
+      <dd>Tres temas (oscuro, claro y alto contraste) que por defecto siguen la preferencia del sistema. Tipografía del sistema: no se descargan fuentes.</dd>
+      <dt>Alojamiento estático</dt>
+      <dd>Son archivos estáticos: funcionan en GitHub Pages, en cualquier servidor web o abriendo <code>index.html</code>.</dd>
+      <dt>Manifiesto de aplicación web</dt>
+      <dd>Permite añadir la página a la pantalla de inicio del móvil y abrirla a pantalla completa, como una app.</dd>
+    </dl>
+
+    <h2>Atajos de teclado</h2>
+    <dl class="keys">
+      <dt><kbd>Espacio</kbd></dt><dd>Reproducir o detener</dd>
+      <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Emisora anterior o siguiente</dd>
+    </dl>
+
+    <h2>Privacidad</h2>
+    <ul>
+      <li>Esta página no usa cookies, analítica, publicidad ni recursos de terceros.</li>
+      <li>Tus preferencias se guardan solo en el almacenamiento local de tu navegador y nunca se envían a ningún sitio. Puedes borrarlas desde los ajustes del navegador.</li>
+      <li>Al reproducir una emisora, tu navegador se conecta a los servidores de esa emisora o de su proveedor de emisión, que reciben tu dirección IP y los datos técnicos habituales de cualquier conexión web. Ese tratamiento corresponde a cada emisora y se rige por su propia política de privacidad.</li>
+      <li>Las emisoras de la lista se solicitan en modo anónimo: el navegador no envía ni guarda las cookies de esos servidores, ni les indica desde qué página escuchas.</li>
+      <li>Las emisoras que añadas tú se intentan primero del mismo modo. Si su servidor no lo admite, se reproducen en modo normal y ese servidor podría usar sus propias cookies.</li>
+      <li>El servidor que aloja esta página (por ejemplo, GitHub Pages) puede registrar tu dirección IP en sus registros técnicos, como cualquier sitio web.</li>
+    </ul>
+
+    <h2>Aviso legal</h2>
+    <p>
+      OndaLibre es un proyecto independiente y no está afiliado, patrocinado ni avalado por ninguna de
+      las emisoras que aparecen. Los nombres de las emisoras son marcas de sus respectivos titulares y
+      se usan únicamente para identificarlas. Todos los contenidos emitidos pertenecen a sus titulares.
+    </p>
+    <p>
+      La página solo enlaza emisiones que las emisoras ofrecen públicamente y sin restricciones de
+      acceso. Cada emisora de la lista incluye un enlace a su web oficial.
+    </p>
+    <p>
+      <strong>Retirada de enlaces.</strong> Si representas a una emisora y quieres que se retire o se
+      corrija su enlace, escribe al responsable de esta copia y se hará sin demora.
+    </p>
+    <!-- TODO before publishing: replace the next paragraph with who runs this copy and a contact address. -->
+    <p>
+      <strong>Responsable de esta copia:</strong>
+      <span class="todo">[pendiente: nombre y contacto de quien publica esta página]</span>
+    </p>
+
+    <h2>Licencia</h2>
+    <p>
+      El código de OndaLibre se publica bajo licencia MIT: puedes usarlo, copiarlo, modificarlo y
+      redistribuirlo, también con fines comerciales, conservando el aviso de copyright. Incluye hls.js
+      (© Dailymotion y colaboradores, licencia Apache-2.0), cuyo aviso está en la carpeta
+      <code>lib/</code>. La licencia cubre el código, no las marcas ni las emisiones de las emisoras.
+    </p>
+    <p><a href="#">← Volver a las emisoras</a></p>
+  </main>
+</div>
+
+<!-- ============ Player ============ -->
+<div class="player" role="region" aria-label="Reproductor">
+  <div class="player-in">
+    <button type="button" class="ico" id="prev" aria-label="Emisora anterior"><svg><use href="#i-prev"/></svg></button>
+    <button type="button" class="playbtn" id="play" aria-label="Reproducir" disabled><svg><use id="playIco" href="#i-play"/></svg></button>
+    <button type="button" class="ico" id="next" aria-label="Emisora siguiente"><svg><use href="#i-next"/></svg></button>
+    <div class="now">
+      <div class="now-name" id="nowName">Elige una emisora</div>
+      <div class="now-state" id="nowState" role="status">Parado</div>
+    </div>
+    <input id="vol" class="vol" type="range" min="0" max="100" value="80" aria-label="Volumen">
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <form method="dialog" id="frm">
+    <h2 id="dlgTitle">Añadir emisora</h2>
+    <p class="hint">Pega la dirección directa de la emisión (MP3, AAC o <code>.m3u8</code>). Se guarda solo en este navegador.</p>
+    <label for="fName">Nombre</label>
+    <input class="input" id="fName" required maxlength="60" autocomplete="off">
+    <label for="fUrl">Dirección de la emisión</label>
+    <input class="input" id="fUrl" type="url" required placeholder="https://" autocomplete="off">
+    <div class="row">
+      <button type="submit" class="btn" value="cancel" formnovalidate>Cancelar</button>
+      <button type="submit" class="btn solid" value="ok">Añadir</button>
+    </div>
+  </form>
+</dialog>
+
+<audio id="audio" preload="none"></audio>
+<script src="lib/hls.light.min.js"></script>
+<script src="stations.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
