@@ -77,7 +77,19 @@ LSSI art. 22.2, so no banner is needed. Adding analytics, ads or embeds would ch
   player falls back to normal mode, where that server could set cookies. This is disclosed and only
   affects streams the listener chose to add.
 
-### 2.8 Accessibility — not mandatory here
+### 2.8 Optional Google Identity Services
+- The Google login panel is optional. The Google JS SDK is fetched only when the visitor opens
+  the panel and an OAuth web client ID has been configured. Google may process account data and
+  use its own cookies/identifiers. The About view must continue explaining this interaction.
+- Only basic name and email are displayed in this browser tab; tokens are not persisted and
+  OndaLibre does not run a backend. The decoded browser token is NOT independently
+  cryptographically verified and must never be used for access control. Add a backend token
+  verifier and appropriate privacy/security measures before building real accounts or sync.
+- Configure approved JavaScript origins in Google Cloud. Never publish an OAuth client secret.
+- Check Google's identity integration policies and applicable EU data-protection obligations before
+  offering the feature publicly. Do not interpret this implementation note as legal approval.
+
+### 2.9 Accessibility — not mandatory here
 RD 1112/2018 binds the public sector and Ley 11/2023 (European Accessibility Act) covers specific
 commercial services. Neither applies to a personal project. The site nonetheless has keyboard
 operation, visible focus, labelled controls and a high-contrast theme.
@@ -92,8 +104,9 @@ operation, visible focus, labelled controls and a high-contrast theme.
 | Fonts | System fonts only | — | Nothing is distributed |
 | Radio Browser (only recommended in the README) | Community database | Public domain | Yes |
 
-No copyleft code, no assets of unclear origin, no build tooling, no API keys or secrets, no minified
-first-party code. Files carry SPDX licence identifiers.
+No copyleft code, no assets of unclear origin, no build tooling or secrets, no minified
+first-party code. The Google OAuth client ID (if configured) is a public identifier, NOT a client
+secret. Files carry SPDX licence identifiers.
 
 ## 4. Before you publish
 
@@ -101,6 +114,7 @@ first-party code. Files carry SPDX licence identifiers.
 - [ ] Check the name against OEPM and EUIPO, or rename.
 - [ ] Put the code in a public repository with `LICENSE`, `THIRD-PARTY-NOTICES.md` and `lib/hls.js.LICENSE.txt`; optionally link the repository from the About view.
 - [ ] Serve over HTTPS.
+- [ ] If enabling Google login, create an OAuth Web client, configure allowed origins and consent/branding, and review the new third-party data flow and privacy text.
 - [ ] Do not add analytics, ads, web fonts or embeds without revisiting 2.6.
 - [ ] Remove any station within a few days if its broadcaster asks.
 - [ ] Re-test the stream URLs from time to time; broadcasters change them.
