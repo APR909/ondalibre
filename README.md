@@ -78,7 +78,7 @@ Any static host works; GitHub Pages is described above.
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
-- 40 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
+- 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Phone layout with large touch targets, safe-area support and lock-screen controls
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
@@ -150,7 +150,8 @@ Follow the rules in the header of `stations.js`: official, freely accessible str
 with the broadcaster's website. The list includes national networks and regional broadcasters
 from Aragón, Asturias, Baleares, Canarias, Castilla-La Mancha, Cataluña, Extremadura, Galicia,
 the Basque Country and Andalusia. Use the **Regional** filter or a community name to narrow the
-list; each station also has a primary genre for local listening statistics.
+list; each station also has a primary genre for local listening statistics. Gozadera FM
+is included under Reguetón, Andalucía and Granada.
 
 Streams were cross-referenced with broadcaster pages and the
 [TDTChannels radio directory](https://github.com/LaQuay/TDTChannels/blob/master/RADIO.md) in
