@@ -79,13 +79,17 @@
 
   /* ---------- views (#about) ---------- */
   function route() {
-    const about = location.hash === "#about";
-    root.setAttribute("data-view", about ? "about" : "home");
+    const hash = location.hash.slice(1);
+    const available = root.dataset.authenticated === "true";
+    const view = hash === "about" ? "about"
+      : available && (hash === "stats-radios" || hash === "stats-genres") ? hash : "home";
+    root.setAttribute("data-view", view);
     document.querySelectorAll("[data-nav]").forEach((a) => {
-      if ((a.dataset.nav === "about") === about) a.setAttribute("aria-current", "page");
+      if (a.dataset.nav === view) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
     });
-    document.title = about ? "Acerca de · OndaLibre" : "OndaLibre · radio en directo";
+    document.title = ({ about: "Acerca de", "stats-radios": "Mis radios",
+      "stats-genres": "Mis géneros", home: "Radio en directo" })[view] + " · OndaLibre";
     window.scrollTo(0, 0);
   }
   window.addEventListener("hashchange", route);
@@ -149,6 +153,20 @@
   }
 
   /* ---------- player ---------- */
+  // Listening statistics use media playback events, not button presses.
+  // Genre is explicit for built-in stations; private stations are grouped as such.
+  function publishPlayback(playing = state === "live" && !audio.paused) {
+    document.dispatchEvent(new CustomEvent("ondalibre:playback", {
+      detail: {
+        playing: !!(current && playing),
+        station: current ? {
+          id: current.id, name: current.name,
+          genre: current.genre || (isCustom(current) ? "Personalizadas" : "Otros")
+        } : null
+      }
+    }));
+  }
+
   function setState(next, text) {
     state = next;
     const label = text || { idle: "Parado", connecting: "Conectando…", live: "En directo", error: "Sin señal" }[next];
@@ -162,6 +180,7 @@
     $("#play").setAttribute("aria-label", busy ? "Detener" : "Reproducir");
     if ("mediaSession" in navigator) navigator.mediaSession.playbackState = busy ? "playing" : "paused";
     syncList();
+    publishPlayback();
   }
 
   function teardown() {
@@ -237,9 +256,13 @@
     if (state === "live") {
       $("#nowState").textContent = "Cargando…";
       $(".player").dataset.playing = "false";
+      publishPlayback(false);
     }
   });
-  audio.addEventListener("stalled", () => { $(".player").dataset.playing = "false"; });
+  audio.addEventListener("stalled", () => {
+    $(".player").dataset.playing = "false";
+    publishPlayback(false);
+  });
   // Paused from outside (headphones unplugged, OS controls): a live stream cannot resume, so stop.
   audio.addEventListener("pause", () => { if (state === "live" && audio.paused) stop(); });
 
@@ -323,7 +346,7 @@
       frm.reportValidity();
       return;
     }
-    const st = { id: "u" + Date.now().toString(36), name, url, desc: "Añadida por ti", tags: ["Mías"],
+    const st = { id: "u" + Date.now().toString(36), name, url, desc: "Añadida por ti", tags: ["Mías"], genre: "Personalizadas",
       type: /\.m3u8(\?|$)/i.test(url) ? "hls" : "audio" };
     custom.push(st);
     save(KEY.custom, custom);
