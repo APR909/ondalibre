@@ -74,6 +74,12 @@ optional functionality under LSSI art. 22.2 and applicable privacy law; this not
 legal determination. Adding remote analytics, ads or embeds would require further review.
 
 ### 2.7 Personal data — small residual
+- The optional “Ahora suena” feature retrieves song metadata from configured broadcaster APIs
+  only while a station is playing. The Gozadera FM integration points to an AzuraCast
+  endpoint hosted at azura.abcorp.es; this endpoint's CORS behavior and availability must
+  be confirmed in a real browser. The metadata host receives IP/connection metadata,
+  but the client sends no Google tokens, favourites or listening history. Review provider
+  terms, information duties and consent implications before enabling more sources.
 - Station logos are fetched directly from external image providers, including Facebook/X and
   Wikimedia, when the relevant image enters view or is selected. These hosts may receive the
   visitor's IP address and request metadata. List images are lazy-loaded with no referrer, but
