@@ -42,10 +42,14 @@ Some broadcasters' website terms say their streams may only be used in their own
 read each broadcaster's terms. They can ask you to remove a link or change the URL at any time.
 Remove on request; that also keeps you inside LSSI art. 17.
 
-### 2.3 Trademarks — low
-Station names appear as plain text to identify the stations, which is permitted referential use
-(Ley 17/2001 art. 37; EU Trade Mark Regulation art. 14). Do not add logos or artwork without
-permission, and keep the non-affiliation statement.
+### 2.3 Trademarks and broadcaster logos — permission review required
+Station names and station-identifying logos are displayed to identify broadcasters.
+The names are used referentially; however, linked logos remain third-party intellectual property
+and trademarks. The logo URLs in `stations.js` were sourced from the public TDTChannels radio
+directory, which does not itself grant OndaLibre a licence to reproduce or redistribute the
+artwork. Remote embedding can also be disallowed by a broadcaster or image host.
+**Review use rights/terms or request permission before public or commercial distribution.**
+Display of a mark is not an endorsement. Remove/replace an image promptly on request.
 
 ### 2.4 The name "OndaLibre" — check before publishing
 "Onda Libre" is already used by radio stations, for example Onda Libre La Iruela (Jaén) and the
@@ -70,6 +74,11 @@ optional functionality under LSSI art. 22.2 and applicable privacy law; this not
 legal determination. Adding remote analytics, ads or embeds would require further review.
 
 ### 2.7 Personal data — small residual
+- Station logos are fetched directly from external image providers, including Facebook/X and
+  Wikimedia, when the relevant image enters view or is selected. These hosts may receive the
+  visitor's IP address and request metadata. List images are lazy-loaded with no referrer, but
+  they are still third-party requests; review whether the privacy notice and applicable consent
+  obligations are sufficient.
 - Your web host logs visitor IP addresses. On GitHub Pages that host is GitHub, which may store
   logs in the United States. The About view
   mentions it in general terms; name the host there if you want to be thorough.
@@ -109,13 +118,14 @@ operation, visible focus, labelled controls and a high-contrast theme.
 | Item | Origin | Licence | Free to copy and modify? |
 |---|---|---|---|
 | `index.html`, `styles.css`, `app.js`, `theme.js`, `manifest.webmanifest`, logo and icons in `assets/` | Written for this project | MIT | Yes, keep the copyright notice |
-| `stations.js` | Hand-written names and descriptions; stream URLs are facts | MIT | Yes; the names remain third-party trademarks |
+| `stations.js` | Hand-written directory metadata and links, including third-party logo URLs | MIT for code/metadata as applicable | The external linked artwork is not licensed by this project |
 | `lib/hls.light.min.js` | hls.js 1.6.13, unmodified apart from the removed source-map comment | Apache-2.0 | Yes, keep its licence file. Apache-2.0 code can be shipped inside an MIT project |
 | Fonts | System fonts only | — | Nothing is distributed |
 | Radio Browser (only recommended in the README) | Community database | Public domain | Yes |
 
-No copyleft code, no assets of unclear origin, no build tooling or secrets, no minified
-first-party code. The Google OAuth client ID (if configured) is a public identifier, NOT a client
+No copyleft code is bundled and no third-party logo image files are distributed in the repo.
+The remotely linked logo images have separate, potentially restricted rights. No build tooling,
+secrets or minified first-party code. The Google OAuth client ID (if configured) is a public identifier, NOT a client
 secret. Files carry SPDX licence identifiers.
 
 ## 4. Before you publish
@@ -125,6 +135,7 @@ secret. Files carry SPDX licence identifiers.
 - [ ] Put the code in a public repository with `LICENSE`, `THIRD-PARTY-NOTICES.md` and `lib/hls.js.LICENSE.txt`; optionally link the repository from the About view.
 - [ ] Serve over HTTPS.
 - [ ] If enabling Google login, create an OAuth Web client, configure allowed origins and consent/branding, and review the new third-party data flow and privacy text.
+- [ ] Review permission/terms for remote station logos and the privacy implications of image-host requests.
 - [ ] Do not add analytics, ads, web fonts or embeds without revisiting 2.6.
 - [ ] Remove any station within a few days if its broadcaster asks.
 - [ ] Re-test the stream URLs from time to time; broadcasters change them.
