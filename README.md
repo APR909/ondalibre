@@ -6,7 +6,7 @@
 and commercial stations in one page that works on phone and desktop.
 
 - Static files only: no backend, no build step, no required account
-- No first-party cookies or analytics; streaming hosts are contacted when selected, and Google only when the account panel is opened
+- No first-party cookies or remote analytics; personal listening history stays on-device, streaming hosts are contacted when selected, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
 - Optional Google Identity Services sign-in and private listening rankings, saved per account in this browser
 - Dark, light and high-contrast themes
