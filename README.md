@@ -6,7 +6,7 @@
 and commercial stations in one page that works on phone and desktop.
 
 - Static files only: no backend, no build step, no required account
-- No first-party cookies or remote analytics; personal listening history stays on-device, streaming hosts are contacted when selected, and Google only when the account panel is opened
+- No first-party cookies or remote analytics; personal listening history stays on-device. Audio hosts are contacted on playback, logo providers when station images appear, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
 - Optional Google Identity Services sign-in and private listening rankings, saved per account in this browser
 - Dark, light and high-contrast themes
@@ -60,7 +60,7 @@ Any static host works; GitHub Pages is described above.
 | `styles.css` | All styling; the three themes are custom-property blocks at the top |
 | `theme.js` | Applies the saved theme before first paint |
 | `app.js` | Player logic, list, favourites, custom stations |
-| `stations.js` | The station directory — edit this to make it yours |
+| `stations.js` | The station directory, including external logo URLs — edit this to make it yours |
 | `auth-config.js` | Public Google OAuth web client ID for this deployment |
 | `auth.js` | Loads Google Identity Services on request; derives a pseudonymous local account key |
 | `stats.js` | Tracks approximate listening time for signed-in users; renders local radio and genre rankings |
@@ -79,6 +79,8 @@ Any static host works; GitHub Pages is described above.
 - Dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
 - 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
+- Station logos in the directory and bottom player, with safe text fallback if a provider blocks an image
+- Current volume percentage shown next to the desktop slider
 - Phone layout with large touch targets, safe-area support and lock-screen controls
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
@@ -166,6 +168,27 @@ stream passes through a signed redirect, so OndaLibre uses ordinary browser audi
 OndaLibre itself.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
 
+## Station logos and volume display
+
+OndaLibre links station-identifying images in `stations.js` using the **logo** column published
+by the community-maintained [TDTChannels radio list](https://github.com/LaQuay/TDTChannels/blob/master/RADIO.md).
+Images are loaded **from third-party hosts** such as Facebook, X/Twitter and Wikimedia, not shipped
+in this repository. List images use `loading="lazy"`, `decoding="async"` and
+`referrerpolicy="no-referrer"`; if a logo URL is missing or blocked, the interface shows the
+station's initials rather than a broken image. The same station art appears next to the
+currently selected station in the lower player (including while it is playing).
+
+**Privacy:** loading these third-party images reveals the visitor's IP address and connection
+metadata to the image host. The application's privacy notice explicitly describes this.
+**Rights:** logos and station brands belong to their owners and are **not** covered by OndaLibre's
+MIT licence. A link to a logo does not establish permission to reuse it; before wider or commercial
+distribution, review rights and remove/change links upon owner request. Third-party image URLs can
+change at any time. No official endorsement is implied.
+
+On desktop, the volume slider displays a live `0–100%` readout reflecting the current in-app
+audio level. On phones, the volume control stays hidden because the device's hardware volume
+buttons control output volume instead.
+
 ## Theming
 
 Each theme is a block of custom properties in `styles.css` (`--bg`, `--surface`, `--text`,
@@ -185,5 +208,5 @@ Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.
 ## Licence
 
 MIT for OndaLibre's code (`LICENSE`). hls.js is Apache-2.0 (`THIRD-PARTY-NOTICES.md`). The licence
-covers the code only: station names are trademarks of their owners and the audio belongs to the
-broadcasters.
+covers the code only: station names and linked logos are the intellectual property or trademarks
+of their owners, and the audio belongs to the broadcasters.
