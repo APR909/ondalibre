@@ -8,6 +8,7 @@ nacionales, autonómicas y locales desde una interfaz rápida y luminosa para m�
 - Static files only: no backend, no build step, no required account
 - No first-party cookies or remote analytics; personal listening history stays on-device. Audio hosts are contacted on playback, logo providers when station images appear, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
+- Compact **Ahora suena** panel: current track title/artist when a supported station provides public data; otherwise an accurate station-category description
 - Optional Google Identity Services sign-in and private listening rankings, saved per account in this browser
 - Neon-branded dark, light and high-contrast themes (purple, cyan and pink accents)
 - Installable on a phone's home screen
@@ -102,6 +103,7 @@ Any static host works; GitHub Pages is described above.
 | `auth-config.js` | Public Google OAuth web client ID for this deployment |
 | `auth.js` | Loads Google Identity Services on request; derives a pseudonymous local account key |
 | `stats.js` | Tracks approximate listening time for signed-in users; renders local radio and genre rankings |
+| `now-playing.js` | Shows station summaries; optionally polls public broadcaster metadata for track titles |
 | `lib/` | hls.js (Apache-2.0) and its licence |
 | `assets/` | Logo, app icons, social preview image |
 | `manifest.webmanifest` | Lets phones install the page as an app |
@@ -113,6 +115,7 @@ Any static host works; GitHub Pages is described above.
 
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
+- Responsive **Ahora suena** panel in the lower bar: live songs where supported, or generic music/news/programming labels
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
@@ -205,6 +208,28 @@ stream passes through a signed redirect, so OndaLibre uses ordinary browser audi
 (no CORS). Its streaming provider could send or set third-party cookies. No cookies are set by
 OndaLibre itself.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
+
+## Now-playing information
+
+The bottom player includes a compact **Ahora suena** panel. For news and general radio,
+it displays a generic description (such as “Noticias y programas”). For musical stations,
+it displays “Música en directo” and the genre unless a verifiable live title/artist is
+available. **OndaLibre does not infer or guess song titles from the audio.** Many broadcasters
+do not publish accessible track metadata; the HTML audio element does not expose ICY stream
+titles across origins.
+
+A public AzuraCast now-playing endpoint is configured for Gozadera FM as a best-effort
+example in `stations.js`. While that station is playing, `now-playing.js` attempts to
+retrieve the currently reported artist and title at intervals, matching the station name
+in the returned data. Requests use CORS, omit credentials and referrer, and stop when playback
+stops or another station is selected. **The endpoint's availability and browser CORS
+headers have not been verified end-to-end.** If requests fail, are blocked or return no
+credible track information, the interface automatically falls back to the generic description.
+
+The metadata provider receives the visitor's IP and technical connection information
+when its API is contacted, but not OndaLibre's Google account, favourites or statistics.
+Do not add metadata endpoints for stations without validating their ownership, CORS,
+response format and privacy impact.
 
 ## Station logos and volume display
 
