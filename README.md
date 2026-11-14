@@ -8,7 +8,7 @@ and commercial stations in one page that works on phone and desktop.
 - Static files only: no backend, no build step, no required account
 - No first-party cookies or analytics; streaming hosts are contacted when selected, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
-- Optional Google Identity Services profile sign-in (requires your own public OAuth client ID; local UI only)
+- Optional Google Identity Services sign-in and private listening rankings, saved per account in this browser
 - Dark, light and high-contrast themes
 - Installable on a phone's home screen
 - MIT licensed and small enough to read in one sitting
@@ -62,7 +62,8 @@ Any static host works; GitHub Pages is described above.
 | `app.js` | Player logic, list, favourites, custom stations |
 | `stations.js` | The station directory — edit this to make it yours |
 | `auth-config.js` | Public OAuth web client ID (blank until configured) |
-| `auth.js` | Loads Google Identity Services only when requested, displays the account in memory |
+| `auth.js` | Loads Google Identity Services on request; derives a pseudonymous local account key |
+| `stats.js` | Tracks approximate listening time for signed-in users; renders local radio and genre rankings |
 | `lib/` | hls.js (Apache-2.0) and its licence |
 | `assets/` | Logo, app icons, social preview image |
 | `manifest.webmanifest` | Lets phones install the page as an app |
@@ -74,6 +75,7 @@ Any static host works; GitHub Pages is described above.
 
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
+- **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type filters, favourites, add/remove your own stream URLs (kept in `localStorage`)
 - Phone layout with large touch targets, safe-area support and lock-screen controls
@@ -85,8 +87,12 @@ Any static host works; GitHub Pages is described above.
 OndaLibre includes a small, optional **Sign in with Google** panel. Google Identity Services is
 loaded only after the user opens it. The resulting name and email are displayed **in memory** for
 this browser tab only, with an explicit sign-out button. The Google ID token is **not stored**,
-posted to OndaLibre, or used to protect any data. The radio player and local favourites work
-without signing in. **This does not create real backend accounts or sync favourites between
+posted to OndaLibre, or used to protect any data. Once signed in, the listener also sees
+**Mis radios** and **Mis géneros**: personal rankings by approximate playing time, saved
+**locally on that browser** under a SHA-256 derivative of the Google account subject.
+No email address, raw Google subject or ID token is saved alongside the history.
+The radio player and local favourites work without signing in.
+**This does not create server-verified accounts or sync favourites or statistics between
 devices.** A secure user system requires a server that validates the ID token signature, issuer,
 audience and expiry and stores user data appropriately.
 
@@ -110,6 +116,25 @@ see [Google's privacy policy](https://policies.google.com/privacy).
 
 Google's implementation docs: [JavaScript API](https://developers.google.com/identity/gsi/web/reference/js-reference)
 and [client ID setup](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
+
+## Personal listening statistics (local to this device)
+
+- Statistics are recorded **only while a Google account is signed in** and the radio is playing.
+  Connecting, pausing and buffering do not intentionally contribute listening time.
+- The bars show each radio's or primary genre's share of **all time listened** for that account
+  on this browser, not a percentage of listeners or an aggregate across users.
+- Genre categories are assigned in `stations.js`. For a user-added radio, the default category
+  is `Personalizadas`.
+- These are approximate wall-clock timings, not a measurement of audio samples. Browser suspension,
+  network disruptions and overlapping open tabs can affect accuracy.
+- The data is saved in this device's `localStorage` under an account-specific pseudonymous key;
+  it survives sign-out and subsequent sign-in of the same account on the same browser.
+  **Nothing is uploaded or shared with Google or OndaLibre.**
+- **Borrar mis estadísticas** clears that account's local history, without touching another account
+  on the same device. Clearing browser data also removes all history.
+- The decoded Google ID token is **not cryptographically verified in this static app**: these tabs
+  are convenience features, not a secure authentication or access-control boundary. For verified
+  identities, cloud synchronization or global popularity charts, use a backend and database.
 
 ## Adding stations
 
