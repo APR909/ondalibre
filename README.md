@@ -61,7 +61,7 @@ Any static host works; GitHub Pages is described above.
 | `theme.js` | Applies the saved theme before first paint |
 | `app.js` | Player logic, list, favourites, custom stations |
 | `stations.js` | The station directory — edit this to make it yours |
-| `auth-config.js` | Public OAuth web client ID (blank until configured) |
+| `auth-config.js` | Public Google OAuth web client ID for this deployment |
 | `auth.js` | Loads Google Identity Services on request; derives a pseudonymous local account key |
 | `stats.js` | Tracks approximate listening time for signed-in users; renders local radio and genre rankings |
 | `lib/` | hls.js (Apache-2.0) and its licence |
