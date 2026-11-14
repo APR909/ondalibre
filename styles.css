@@ -4,40 +4,55 @@
  * With no explicit choice (<html> has no data-theme) the system preference wins.
  */
 
-/* ---------- themes ---------- */
-:root {                       /* dark (default) */
-  --bg: #101010;
-  --surface: #181818;
-  --text: #ededed;
-  --muted: #a3a3a3;
-  --line: #2c2c2c;
-  --accent: #ff7a59;
-  --bw: 1px;                  /* border width */
-  --ring: 2px;                /* focus ring width */
+/* ---------- themes: Neon / dark by default ---------- */
+:root {
+  --bg: #0b0717;
+  --surface: #171027;
+  --surface-2: #211536;
+  --text: #f7f2ff;
+  --muted: #bfafd7;
+  --line: #473260;
+  --accent: #d6a2ff;       /* accessible lilac for dark backgrounds */
+  --accent-2: #77e4ff;     /* radio wave cyan */
+  --accent-3: #ff718f;     /* transmitter pink */
+  --glow-purple: rgba(167, 74, 255, .22);
+  --glow-cyan: rgba(80, 210, 255, .10);
+  --bw: 1px;
+  --ring: 2px;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #fbfbfa; --surface: #ffffff; --text: #171717; --muted: #5c5c5c;
-    --line: #dededb; --accent: #b93516;
+    --bg: #f7f4fc; --surface: #ffffff; --surface-2: #eee5fa;
+    --text: #231535; --muted: #635376; --line: #cdbbe1;
+    --accent: #7132b0; --accent-2: #00728a; --accent-3: #aa255c;
+    --glow-purple: rgba(111, 55, 185, .10); --glow-cyan: rgba(6, 124, 146, .06);
     color-scheme: light;
   }
 }
 @media (prefers-contrast: more) {
   :root:not([data-theme]) {
-    --bg: #000; --surface: #000; --text: #fff; --muted: #fff;
-    --line: #fff; --accent: #ffe600; --bw: 2px; --ring: 3px;
+    --bg: #000000; --surface: #000000; --surface-2: #000000;
+    --text: #ffffff; --muted: #ffffff; --line: #ffffff;
+    --accent: #ffe500; --accent-2: #72faff; --accent-3: #ff9fc8;
+    --glow-purple: transparent; --glow-cyan: transparent;
+    --bw: 2px; --ring: 3px;
     color-scheme: dark;
   }
 }
 :root[data-theme="light"] {
-  --bg: #fbfbfa; --surface: #ffffff; --text: #171717; --muted: #5c5c5c;
-  --line: #dededb; --accent: #b93516;
+  --bg: #f7f4fc; --surface: #ffffff; --surface-2: #eee5fa;
+  --text: #231535; --muted: #635376; --line: #cdbbe1;
+  --accent: #7132b0; --accent-2: #00728a; --accent-3: #aa255c;
+  --glow-purple: rgba(111, 55, 185, .10); --glow-cyan: rgba(6, 124, 146, .06);
   color-scheme: light;
 }
 :root[data-theme="contrast"] {
-  --bg: #000; --surface: #000; --text: #fff; --muted: #fff;
-  --line: #fff; --accent: #ffe600; --bw: 2px; --ring: 3px;
+  --bg: #000000; --surface: #000000; --surface-2: #000000;
+  --text: #ffffff; --muted: #ffffff; --line: #ffffff;
+  --accent: #ffe500; --accent-2: #72faff; --accent-3: #ff9fc8;
+  --glow-purple: transparent; --glow-cyan: transparent;
+  --bw: 2px; --ring: 3px;
   color-scheme: dark;
 }
 
@@ -46,7 +61,10 @@
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse 65% 30% at 14% 0%, var(--glow-purple), transparent 95%),
+    radial-gradient(ellipse 45% 24% at 95% 4%, var(--glow-cyan), transparent 95%),
+    var(--bg);
   color: var(--text);
   font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   padding-bottom: calc(104px + env(safe-area-inset-bottom));   /* room for the fixed player */
@@ -348,4 +366,96 @@ dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20
   .top .auth { order: 2; }
   .top .themes { order: 4; }
   .stats-page { padding-top: 24px; }
+}
+
+
+/* ---------- Neon visual identity (variant 04) ---------- */
+/* Keep selectors scoped so light and high-contrast themes remain usable. */
+.top {
+  align-items: center;
+  position: relative;
+}
+.top::after {
+  content: "";
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--accent-3), var(--accent), var(--accent-2));
+  opacity: .6; pointer-events: none;
+}
+.brand { gap: 10px; font-weight: 600; }
+.mark {
+  width: 31px; height: 31px; flex: none;
+  border-radius: 9px; box-shadow: 0 0 17px var(--glow-purple);
+}
+.brand b { color: var(--accent); font-weight: 800; }
+:root:not([data-theme="light"]):not([data-theme="contrast"]) .brand b {
+  color: #e9bbff; text-shadow: 0 0 14px var(--glow-purple);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .brand b { color: var(--accent); text-shadow: none; }
+}
+@media (prefers-contrast: more) {
+  :root:not([data-theme]) .brand b { color: var(--accent); text-shadow: none; }
+}
+:root[data-theme="contrast"] .brand b { text-shadow: none; }
+
+.input, .btn, dialog, .auth-panel {
+  border-color: var(--line);
+}
+.input:focus-visible, .auth[open] summary {
+  border-color: var(--accent);
+}
+.btn:hover:not(:disabled), .st-main:hover .station-art, .auth summary:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--glow-purple), 0 0 16px var(--glow-purple);
+}
+.btn.solid, .btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+.playbtn {
+  color: #120923;
+  background: linear-gradient(135deg, var(--accent-3) 0%, var(--accent) 62%, var(--accent-2) 100%);
+  box-shadow: 0 0 22px var(--glow-purple);
+}
+.st.is-current {
+  background: linear-gradient(90deg, var(--glow-purple), transparent 68%);
+}
+.st.is-current .st-name { color: var(--accent); }
+.st.is-current .station-art { box-shadow: 0 0 13px var(--glow-purple); }
+.player {
+  background: var(--surface);
+  border-top-color: var(--line);
+  box-shadow: 0 -10px 28px var(--glow-purple);
+}
+.player[data-playing="true"] .now-state[data-kind="live"],
+.player[data-playing="true"] .eq-bars { color: var(--accent-2); }
+.player[data-playing="true"] .eq-bars span {
+  background: currentColor;
+  box-shadow: 0 0 8px var(--glow-cyan);
+}
+.stats-fill {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+.stats-percentage, .stats-eyebrow { color: var(--accent); }
+.vol { accent-color: var(--accent); }
+:root[data-theme="contrast"] .playbtn,
+:root[data-theme="contrast"] .btn.solid,
+:root[data-theme="contrast"] .btn[aria-pressed="true"] {
+  background: var(--accent);
+  color: #000;
+  box-shadow: none;
+}
+:root[data-theme="contrast"] .st.is-current,
+:root[data-theme="contrast"] .player { box-shadow: none; }
+@media (prefers-contrast: more) {
+  :root:not([data-theme]) .playbtn,
+  :root:not([data-theme]) .btn.solid,
+  :root:not([data-theme]) .btn[aria-pressed="true"] {
+    background: var(--accent); color: #000; box-shadow: none;
+  }
+  :root:not([data-theme]) .player { box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .playbtn, .station-art { transition: none; }
 }
