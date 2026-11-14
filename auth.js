@@ -25,6 +25,7 @@
   let libraryLoading = false;
   let initialized = false;
   let profile = null;
+  let authSequence = 0; // ignore sign-in callbacks invalidated by sign-out
 
   function message(value) { status.textContent = value; }
 
@@ -43,7 +44,7 @@
     summary.setAttribute("aria-label", "Cuenta de Google: " + name);
     userPanel.hidden = false;
     buttonHost.hidden = true;
-    message("Perfil visible solo en esta pestaña. No sincroniza favoritas.");
+    message("Tu actividad se guarda para esta cuenta en este navegador. No se sincroniza entre dispositivos.");
   }
 
   // The payload is used only to personalize the UI. Decoding a JWT in the
@@ -58,7 +59,16 @@
     } catch { return null; }
   }
 
-  function receiveCredential(response) {
+  // A pseudonymous, per-account local storage namespace. Neither the Google
+  // subject nor its token is persisted; this does not verify a login server-side.
+  async function localAccountKey(subject) {
+    if (!window.crypto || !window.crypto.subtle) return null;
+    const input = new TextEncoder().encode("ondalibre-stats-v1:" + clientId + ":" + subject);
+    const digest = await crypto.subtle.digest("SHA-256", input);
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function receiveCredential(response) {
     const claims = decodePayload(response && response.credential);
     if (!claims ||
         claims.aud !== clientId ||
@@ -68,12 +78,23 @@
       message("No se pudo leer la respuesta de Google. Inténtalo de nuevo.");
       return;
     }
-    // Not a server-authenticated session. Do not store JWT or Google IDs.
+    // Profile data is held in memory only; a derived key separates local
+    // listening statistics between Google accounts on this browser.
+    const sequence = ++authSequence;
+    let accountKey;
+    try { accountKey = await localAccountKey(claims.sub); }
+    catch { accountKey = null; }
+    if (sequence !== authSequence) return;
+    if (!accountKey) {
+      message("Este navegador no permite guardar estadísticas de forma segura. Prueba con HTTPS.");
+      return;
+    }
     profile = {
       name: typeof claims.name === "string" ? claims.name : "",
       email: typeof claims.email === "string" ? claims.email : ""
     };
     renderAccount();
+    document.dispatchEvent(new CustomEvent("ondalibre:auth", { detail: { accountKey } }));
   }
 
   function renderGoogleButton() {
@@ -121,7 +142,9 @@
 
   panel.addEventListener("toggle", () => { if (panel.open) openGoogle(); });
   signOut.addEventListener("click", () => {
+    authSequence++;
     profile = null;
+    document.dispatchEvent(new CustomEvent("ondalibre:auth", { detail: { accountKey: null } }));
     if (initialized && window.google && google.accounts && google.accounts.id) {
       google.accounts.id.disableAutoSelect();
     }
