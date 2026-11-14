@@ -10,6 +10,12 @@
   const root = document.documentElement;
   const audio = $("#audio");
 
+  // Where supported (notably newer Safari), mark this page as a long-running
+  // media player rather than transient sound. Unsupported browsers ignore it.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = "playback";
+  } catch { /* Audio Session API is experimental and optional */ }
+
   /* ---------- storage (fails soft when unavailable) ---------- */
   const KEY = { favs: "ondalibre.favs", custom: "ondalibre.custom", vol: "ondalibre.vol", last: "ondalibre.last", theme: "ondalibre.theme" };
   const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } };
@@ -32,7 +38,7 @@
   let onlyFavs = false;
   let query = "";
   let current = null;        // selected station
-  let state = "idle";        // idle | connecting | live | error
+  let state = "idle";        // idle | connecting | live | paused | error
   let hls = null;
   let attempt = 0;           // increments on every (re)connect; stale callbacks are ignored
   let timer = 0;
@@ -206,7 +212,7 @@
 
   function setState(next, text) {
     state = next;
-    const label = text || { idle: "Parado", connecting: "Conectando…", live: "En directo", error: "Sin señal" }[next];
+    const label = text || { idle: "Parado", connecting: "Conectando…", live: "En directo", paused: "Pausado", error: "Sin señal" }[next];
     const st = $("#nowState");
     st.textContent = label;
     // Reflect real playback, not merely a user click or pending connection.
@@ -215,7 +221,10 @@
     const busy = next === "live" || next === "connecting";
     $("#playIco").setAttribute("href", busy ? "#i-stop" : "#i-play");
     $("#play").setAttribute("aria-label", busy ? "Detener" : "Reproducir");
-    if ("mediaSession" in navigator) navigator.mediaSession.playbackState = busy ? "playing" : "paused";
+    // The OS must not report an active radio while the stream is merely connecting.
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.playbackState = next === "live" && !audio.paused ? "playing" : "paused";
+    }
     syncList();
     publishPlayback();
   }
@@ -276,8 +285,9 @@
     };
     if (anonymous) audio.crossOrigin = "anonymous"; else audio.removeAttribute("crossorigin");
 
-    // iPhone/iPad/Safari play HLS natively, which is lighter and keeps playing in the background.
-    const nativeHls = /Apple/.test(navigator.vendor || "") && audio.canPlayType("application/vnd.apple.mpegurl");
+    // Prefer native HLS wherever supported: the OS can own the audio stream
+    // without relying on hls.js JavaScript fetching segments in the background.
+    const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
     if (isHls && !nativeHls && window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls();
       hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data.fatal) fail(); });
@@ -299,31 +309,49 @@
   }
 
   function stop() { teardown(); setState("idle"); }
+
+  // OS lock-screen pause and temporary audio interruptions should preserve
+  // the stream, so the phone's Play control can resume it without navigation.
+  function pausePlayback() {
+    if (!current || (state !== "live" && state !== "connecting")) return;
+    clearTimeout(timer);
+    audio.pause();
+    setState("paused");
+  }
+
+  function resume() {
+    if (!current || (state === "live" && !audio.paused)) return;
+    if (state === "connecting" && !audio.paused) return;
+    const canResume = (state === "paused" || needsGesture)
+      && (hls || audio.currentSrc || audio.getAttribute("src"));
+    if (!canResume) { connect(current); return; }
+
+    needsGesture = false;
+    const me = attempt;
+    clearTimeout(timer);
+    setState("connecting", "Reanudando…");
+    audio.play().catch((err) => {
+      if (me !== attempt || (err && err.name === "AbortError")) return;
+      clearTimeout(timer);
+      if (err && err.name === "NotAllowedError") {
+        needsGesture = true;
+        setState("paused", "Pulsa Reproducir para continuar");
+      } else {
+        teardown();
+        setState("error", "No se pudo reanudar. Pulsa Reproducir.");
+      }
+    });
+    timer = setTimeout(() => {
+      if (me !== attempt || state !== "connecting") return;
+      teardown();
+      setState("error", "Sin señal. Pulsa Reproducir.");
+    }, 20000);
+  }
+
   function toggle() {
     if (!current) return;
     if (state === "live" || state === "connecting") { stop(); return; }
-    if (needsGesture && hls) {
-      needsGesture = false;
-      setState("connecting");
-      const me = attempt;
-      audio.play().catch((err) => {
-        if (me !== attempt || (err && err.name === "AbortError")) return;
-        if (err && err.name === "NotAllowedError") {
-          needsGesture = true;
-          setState("idle", "Pulsa Reproducir otra vez");
-        } else {
-          teardown();
-          setState("error", "Sin señal. Prueba más tarde.");
-        }
-      });
-      timer = setTimeout(() => {
-        if (me !== attempt || state !== "connecting") return;
-        teardown();
-        setState("error", "Sin señal. Prueba más tarde.");
-      }, 20000);
-      return;
-    }
-    connect(current);
+    resume();
   }
   function step(dir) {
     const list = visible().length ? visible() : all();
@@ -331,7 +359,11 @@
     connect(list[(i + dir + list.length) % list.length]);
   }
 
-  audio.addEventListener("playing", () => { clearTimeout(timer); setState("live"); });
+  audio.addEventListener("playing", () => {
+    if (audio.paused) return;
+    clearTimeout(timer);
+    setState("live");
+  });
   audio.addEventListener("waiting", () => {
     if (state === "live") {
       $("#nowState").textContent = "Cargando…";
@@ -343,13 +375,16 @@
     $(".player").dataset.playing = "false";
     publishPlayback(false);
   });
-  // Paused from outside (headphones unplugged, OS controls): a live stream cannot resume, so stop.
-  audio.addEventListener("pause", () => { if (state === "live" && audio.paused) stop(); });
+  // Pausing from a headset, call or lock screen must not destroy the stream.
+  // Ignore queued pause events from teardown/reconnection, when state is not live.
+  audio.addEventListener("pause", () => {
+    if (state === "live" && audio.paused) setState("paused");
+  });
 
   if ("mediaSession" in navigator) {
     const on = (name, fn) => { try { navigator.mediaSession.setActionHandler(name, fn); } catch { /* unsupported */ } };
-    on("play", () => current && connect(current));
-    on("pause", stop);
+    on("play", resume);
+    on("pause", pausePlayback);
     on("stop", stop);
     on("previoustrack", () => step(-1));
     on("nexttrack", () => step(1));
