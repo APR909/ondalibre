@@ -128,6 +128,7 @@
 
   // The main player may restore the last station before this module loads.
   const lastName = document.getElementById("nowName")?.textContent;
-  const last = (window.STATIONS || []).find((s) => s.name === lastName);
-  if (last) show("Emisión detenida", last.name);
+  if (lastName && lastName !== "Elige una emisora") {
+    show("Emisión detenida", lastName);
+  }
 })();
