@@ -253,7 +253,7 @@
   // A few broadcasters (currently Kiss FM) use signed streaming redirects that
   // cannot be played in CORS mode. They use ordinary HTML audio without CORS.
   // This may allow the broadcaster to read/set its own third-party cookies.
-  function connect(station, anonymous = station.cors !== "no-cors") {
+  function connect(station, anonymous = station.cors !== "no-cors", allowContinuous = true) {
     teardown();
     const me = attempt;
     select(station);
@@ -264,7 +264,7 @@
     // JavaScript-driven HLS fetching may be suspended after screen lock.
     const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
     const originalHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
-    const useContinuous = originalHls && !nativeHls
+    const useContinuous = allowContinuous && originalHls && !nativeHls
       && typeof station.backgroundUrl === "string"
       && isHttpUrl(station.backgroundUrl)
       && !/\.m3u8(\?|$)/i.test(station.backgroundUrl);
@@ -273,6 +273,9 @@
 
     const fail = () => {
       if (me !== attempt) return;
+      // If the mobile-friendly alternative is blocked/offline, retry the
+      // original station stream once rather than making the radio unusable.
+      if (useContinuous) { connect(station, anonymous, false); return; }
       // Only for stations the listener added: retry once without CORS for servers that lack CORS headers.
       if (anonymous && isCustom(station) && !isHls) { connect(station, false); return; }
       teardown();
