@@ -154,6 +154,8 @@
     const label = text || { idle: "Parado", connecting: "Conectando…", live: "En directo", error: "Sin señal" }[next];
     const st = $("#nowState");
     st.textContent = label;
+    // Reflect real playback, not merely a user click or pending connection.
+    $(".player").dataset.playing = String(next === "live" && !audio.paused);
     st.dataset.kind = next;
     const busy = next === "live" || next === "connecting";
     $("#playIco").setAttribute("href", busy ? "#i-stop" : "#i-play");
@@ -231,7 +233,13 @@
   }
 
   audio.addEventListener("playing", () => { clearTimeout(timer); setState("live"); });
-  audio.addEventListener("waiting", () => { if (state === "live") $("#nowState").textContent = "Cargando…"; });
+  audio.addEventListener("waiting", () => {
+    if (state === "live") {
+      $("#nowState").textContent = "Cargando…";
+      $(".player").dataset.playing = "false";
+    }
+  });
+  audio.addEventListener("stalled", () => { $(".player").dataset.playing = "false"; });
   // Paused from outside (headphones unplugged, OS controls): a live stream cannot resume, so stop.
   audio.addEventListener("pause", () => { if (state === "live" && audio.paused) stop(); });
 
