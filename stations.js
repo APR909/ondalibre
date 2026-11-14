@@ -11,6 +11,7 @@
  *
  * Original URLs were reviewed on 2026-11-14. New entries are sourced from
  * published station directories; playback and CORS need browser verification.
+ * Kiss FM uses a temporary signed URL and the browser's no-CORS media mode.
  */
 window.STATIONS = [
   { id: "rne", name: "Radio Nacional", desc: "Información y magacines de la radio pública estatal",
@@ -79,8 +80,11 @@ window.STATIONS = [
     site: "https://www.rockfm.fm/" },
   { id: "kissfm", name: "Kiss FM", desc: "Grandes éxitos de los 80, 90 y hasta hoy",
     tags: ["Música", "Clásicos"], type: "audio",
-    url: "https://kissfm.kissfmradio.cires21.com/kissfm.mp3",
-    site: "https://www.kissfm.es/" },
+    // The broadcaster's ad-handler issues a temporary signed streaming URL.
+    // This MP3 endpoint may not expose CORS; ordinary <audio> playback is required.
+    cors: "no-cors",
+    url: "https://adhandler.kissfmradio.cires21.com/get_link?url=https://bbkissfm.kissfmradio.cires21.com/bbkissfm.mp3&lang=es",
+    site: "https://www.kissfm.es/player/" },
   { id: "los40classic", name: "LOS40 Classic (antes M80 Radio)", desc: "Clásicos del pop y rock de los 80, 90 y 2000",
     tags: ["Música", "Clásicos"], type: "audio",
     url: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_CLASSIC.mp3",
