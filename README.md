@@ -91,7 +91,7 @@ posted to OndaLibre, or used to protect any data. Once signed in, the listener a
 **Mis radios** and **Mis géneros**: personal rankings by approximate playing time, saved
 **locally on that browser** under a SHA-256 derivative of the Google account subject.
 No email address, raw Google subject or ID token is saved alongside the history.
-The radio player and local favourites work without signing in.
+The radio player and local favourites work without signing in. The **Salir de OndaLibre** action clears only the local in-memory profile and hides listening statistics; it does not sign the person out of Google itself.
 **This does not create server-verified accounts or sync favourites or statistics between
 devices.** A secure user system requires a server that validates the ID token signature, issuer,
 audience and expiry and stores user data appropriately.
