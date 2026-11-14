@@ -2,18 +2,18 @@
 
 # OndaLibre
 
-**A minimal, open-source live radio player for the web.** Pick a station and listen: Spanish public
-and commercial stations in one page that works on phone and desktop.
+**OndaLibre — radio en directo con estética neón y código abierto.** Escucha 41 emisoras españolas
+nacionales, autonómicas y locales desde una interfaz rápida y luminosa para móvil y ordenador.
 
 - Static files only: no backend, no build step, no required account
 - No first-party cookies or remote analytics; personal listening history stays on-device. Audio hosts are contacted on playback, logo providers when station images appear, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
 - Optional Google Identity Services sign-in and private listening rankings, saved per account in this browser
-- Dark, light and high-contrast themes
+- Neon-branded dark, light and high-contrast themes (purple, cyan and pink accents)
 - Installable on a phone's home screen
 - MIT licensed and small enough to read in one sitting
 
-*Reproductor de radio en directo de código abierto. Sin servidor, sin cuentas ni cookies propias.*
+*Reproductor de radio online con diseño neón. 41 emisoras españolas, favoritas y filtros regionales; sin servidor propio ni cuentas obligatorias.*
 
 ## Publish on GitHub Pages
 
@@ -34,9 +34,9 @@ The folder is ready as-is: all paths are relative, so it works under `https://US
 
 Suggested repository details ("About" box on the repository page):
 
-- **Description:** `Minimal open-source live web radio player. Static, no backend, no first-party cookies. Dark, light and high-contrast themes.`
-- **Topics:** `radio` `web-radio` `internet-radio` `hls` `vanilla-js` `static-site` `pwa` `accessibility` `spain`
-- **Social preview** (Settings → General): upload `assets/social-preview.png`.
+- **Description:** `Radio online de código abierto con estética neón. 41 emisoras españolas en directo, favoritas, filtros regionales y PWA.`
+- **Topics:** `radio` `web-radio` `internet-radio` `hls` `vanilla-js` `static-site` `pwa` `accessibility` `spain` `neon-design`
+- **Social preview** (Settings → General): upload `assets/social-preview.png` when refreshed with the Neon design.
 
 ## On a phone
 
@@ -76,7 +76,7 @@ Any static host works; GitHub Pages is described above.
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
-- Dark, light and high-contrast themes; follows the system setting until the listener chooses
+- Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
 - 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Station logos in the directory and bottom player, with safe text fallback if a provider blocks an image
@@ -188,6 +188,19 @@ change at any time. No official endorsement is implied.
 On desktop, the volume slider displays a live `0–100%` readout reflecting the current in-app
 audio level. On phones, the volume control stays hidden because the device's hardware volume
 buttons control output volume instead.
+
+## Visual identity — variant 04 «Neón»
+
+The site uses the user-selected Neon variant for `assets/logo.svg` (the source SVG from
+the OndaLibre logo comparison, unchanged apart from its accessible label). The visual
+system matches its violet border, pink transmitter and lilac/cyan broadcast waves.
+The header, player, buttons, current station, mini equalizer and statistics share those
+accents. Unlike a decorative skin, the palette defines corresponding **light** and
+**high-contrast** themes, and respects reduced-motion preferences.
+
+Core colours: midnight `#100C22` / page `#0B0717`, violet `#A146F7`,
+lilac `#D6A2FF`, cyan `#77E4FF`, pink `#FF718F`. The original app
+functionality, personal listening statistics and optional Google sign-in remain intact.
 
 ## Theming
 
