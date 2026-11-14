@@ -67,6 +67,11 @@ svg { width: 18px; height: 18px; fill: currentColor; display: block; }
 #about { display: none; }
 :root[data-view="about"] #about { display: block; }
 :root[data-view="about"] #home { display: none; }
+#stats-radios, #stats-genres { display: none; }
+:root[data-view="stats-radios"] #home,
+:root[data-view="stats-genres"] #home { display: none; }
+:root[data-view="stats-radios"][data-authenticated="true"] #stats-radios,
+:root[data-view="stats-genres"][data-authenticated="true"] #stats-genres { display: block; }
 
 /* ---------- header ---------- */
 .top {
@@ -287,4 +292,37 @@ dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20
   .auth-panel { right: 0; }
   .eq-bars { margin-left: 2px; width: 21px; gap: 2px; }
   .now { margin-left: 5px; }
+}
+
+
+/* ---------- personal listening rankings (signed-in, local only) ---------- */
+.stats-page { padding: 32px 0 54px; }
+.stats-eyebrow {
+  margin: 0 0 7px; font-size: .75rem; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--accent);
+}
+.stats-page h1 { margin: 0 0 12px; font-size: clamp(1.4rem, 4vw, 1.9rem); line-height: 1.25; letter-spacing: -.02em; }
+.stats-intro { max-width: 62ch; margin: 0 0 16px; color: var(--muted); font-size: .9rem; }
+.stats-total { margin: 0 0 19px; font-size: .9rem; font-weight: 700; }
+.stats-list { list-style: none; margin: 0; padding: 0; border-top: var(--bw) solid var(--line); }
+.stats-item { padding: 15px 0 13px; border-bottom: var(--bw) solid var(--line); }
+.stats-row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 9px; }
+.stats-label { min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.stats-percentage { flex: none; color: var(--accent); font-size: .95rem; font-variant-numeric: tabular-nums; }
+.stats-track { width: 100%; height: 10px; overflow: hidden; background: var(--line); border-radius: 999px; }
+.stats-fill { height: 100%; background: var(--accent); border-radius: inherit; transition: width 200ms ease; }
+.stats-duration { display: block; margin-top: 7px; font-size: .77rem; color: var(--muted); }
+.stats-empty { padding: 32px 0; color: var(--muted); font-size: .9rem; }
+.stats-note { max-width: 65ch; color: var(--muted); font-size: .8125rem; margin: 22px 0 14px; }
+.stats-clear { color: var(--muted); }
+.stats-clear:hover { color: var(--text); }
+@media (prefers-reduced-motion: reduce) {
+  .stats-fill { transition: none; }
+}
+@media (max-width: 600px) {
+  .top nav { order: 3; width: 100%; gap: 20px; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+  .top nav::-webkit-scrollbar { display: none; }
+  .top .auth { order: 2; }
+  .top .themes { order: 4; }
+  .stats-page { padding-top: 24px; }
 }
