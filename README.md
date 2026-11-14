@@ -6,12 +6,12 @@
 and commercial stations in one page that works on phone and desktop.
 
 - Static files only: no backend, no build step, no accounts
-- No cookies, no analytics, no third-party requests except the audio stream you pick
+- No first-party cookies or analytics; third-party audio hosts are contacted only for streams you play
 - Dark, light and high-contrast themes
 - Installable on a phone's home screen
 - MIT licensed and small enough to read in one sitting
 
-*Reproductor de radio en directo de código abierto. Sin servidor, sin cuentas, sin cookies.*
+*Reproductor de radio en directo de código abierto. Sin servidor, sin cuentas ni cookies propias.*
 
 ## Publish on GitHub Pages
 
@@ -32,7 +32,7 @@ The folder is ready as-is: all paths are relative, so it works under `https://US
 
 Suggested repository details ("About" box on the repository page):
 
-- **Description:** `Minimal open-source live web radio player. Static, no backend, no cookies. Dark, light and high-contrast themes.`
+- **Description:** `Minimal open-source live web radio player. Static, no backend, no first-party cookies. Dark, light and high-contrast themes.`
 - **Topics:** `radio` `web-radio` `internet-radio` `hls` `vanilla-js` `static-site` `pwa` `accessibility` `spain`
 - **Social preview** (Settings → General): upload `assets/social-preview.png`.
 
@@ -85,8 +85,10 @@ Use the "Añadir" button (saved in that browser only) or edit `stations.js`:
 ```
 
 Follow the rules in the header of `stations.js`: official, freely accessible streams only, always
-with the broadcaster's website. Built-in stations must be HTTPS and send CORS headers, because they
-are requested in anonymous mode so the stream server's cookies are never stored.
+with the broadcaster's website. Built-in stations should use HTTPS and permit anonymous CORS
+playback. Kiss FM is an exception: its official stream passes through a signed redirect, so
+OndaLibre uses ordinary browser audio playback (no CORS). Its streaming provider could send or
+set third-party cookies. No cookies are set by OndaLibre itself.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
 
 ## Theming
