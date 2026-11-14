@@ -20,6 +20,8 @@ window.STATIONS = [
   { id: "rne", name: "Radio Nacional", desc: "Información y magacines de la radio pública estatal",
     tags: ["Noticias", "Pública"], genre: "Noticias", type: "hls",
     url: "https://rtvelivestream.rtve.es/rtvesec/rne/rne_r1_main.m3u8",
+    // RTVE regional MP3 for devices where HLS.js is suspended in the background.
+    backgroundUrl: "https://dispatcher.rndfnk.com/crtve/rne1/and/mp3/high",
     logo: "https://graph.facebook.com/radionacionalrne/picture?width=200&height=200",
     site: "https://www.rtve.es/play/radio/" },
   { id: "radioclasica", name: "Radio Clásica", desc: "Música clásica, ópera y jazz",
@@ -35,6 +37,8 @@ window.STATIONS = [
   { id: "radio5", name: "Radio 5", desc: "Noticias las 24 horas",
     tags: ["Noticias", "Pública"], genre: "Noticias", type: "hls",
     url: "https://rtvelivestream.rtve.es/rtvesec/rne/rne_r5_madrid_main.m3u8",
+    // Radio 5 Andalucía MP3 (territorial opt-outs may differ from main HLS).
+    backgroundUrl: "https://dispatcher.rndfnk.com/crtve/rne5/sev/mp3/high",
     logo: "https://pbs.twimg.com/profile_images/2116820353640964096/JDGVKMUL_200x200.jpg",
     site: "https://www.rtve.es/play/radio/" },
   { id: "ser", name: "Cadena SER", desc: "Información, tertulia y deportes",
@@ -50,6 +54,8 @@ window.STATIONS = [
   { id: "ondacero", name: "Onda Cero", desc: "Información, tertulia y deportes",
     tags: ["Noticias"], genre: "Noticias", type: "hls",
     url: "https://atres-live.ondacero.es/live/ondacero/bitrate_1.m3u8",
+    // Broadcaster-published AAC option is easier to keep active on Android.
+    backgroundUrl: "https://radio-atres-live.ondacero.es/api/livestream-redirect/OCAAC.aac",
     logo: "https://graph.facebook.com/ondacero/picture?width=200&height=200",
     site: "https://www.ondacero.es/" },
   { id: "esradio", name: "esRadio", desc: "Actualidad y opinión",
