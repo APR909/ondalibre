@@ -5,8 +5,10 @@
 **A minimal, open-source live radio player for the web.** Pick a station and listen: Spanish public
 and commercial stations in one page that works on phone and desktop.
 
-- Static files only: no backend, no build step, no accounts
-- No first-party cookies or analytics; third-party audio hosts are contacted only for streams you play
+- Static files only: no backend, no build step, no required account
+- No first-party cookies or analytics; streaming hosts are contacted when selected, and Google only when the account panel is opened
+- Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
+- Optional Google Identity Services profile sign-in (requires your own public OAuth client ID; local UI only)
 - Dark, light and high-contrast themes
 - Installable on a phone's home screen
 - MIT licensed and small enough to read in one sitting
@@ -59,6 +61,8 @@ Any static host works; GitHub Pages is described above.
 | `theme.js` | Applies the saved theme before first paint |
 | `app.js` | Player logic, list, favourites, custom stations |
 | `stations.js` | The station directory — edit this to make it yours |
+| `auth-config.js` | Public OAuth web client ID (blank until configured) |
+| `auth.js` | Loads Google Identity Services only when requested, displays the account in memory |
 | `lib/` | hls.js (Apache-2.0) and its licence |
 | `assets/` | Logo, app icons, social preview image |
 | `manifest.webmanifest` | Lets phones install the page as an app |
@@ -69,11 +73,43 @@ Any static host works; GitHub Pages is described above.
 ## Features
 
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
+- Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
 - Dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type filters, favourites, add/remove your own stream URLs (kept in `localStorage`)
 - Phone layout with large touch targets, safe-area support and lock-screen controls
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
+
+## Optional Google sign-in (static GitHub Pages)
+
+OndaLibre includes a small, optional **Sign in with Google** panel. Google Identity Services is
+loaded only after the user opens it. The resulting name and email are displayed **in memory** for
+this browser tab only, with an explicit sign-out button. The Google ID token is **not stored**,
+posted to OndaLibre, or used to protect any data. The radio player and local favourites work
+without signing in. **This does not create real backend accounts or sync favourites between
+devices.** A secure user system requires a server that validates the ID token signature, issuer,
+audience and expiry and stores user data appropriately.
+
+To enable the button:
+
+1. Go to [Google Cloud Console — Clients](https://console.cloud.google.com/auth/clients)
+   and create or select a project. Configure the OAuth consent screen/branding.
+2. Create an OAuth client of type **Web application**. Add the **Authorized JavaScript origin**
+   `https://apr909.github.io` (just the origin — **not** `/ondalibre/`).
+   For local testing, also add `http://localhost:8080` if needed.
+3. Copy the client ID (it ends in `.apps.googleusercontent.com`) and set it in
+   `auth-config.js` as `window.ONDA_GOOGLE_CLIENT_ID = "...";`. The client ID is public;
+   **never commit an OAuth client secret**.
+4. Commit that file to `main` and deploy with GitHub Pages. On the site, open
+   **Iniciar sesión** and select the Google button. If your OAuth app is in testing mode,
+   add your account as a test user in Google Cloud.
+
+This feature intentionally does not load Google on page load and does not silently sign anyone in.
+Google's own services may use cookies or other information when the account panel is opened;
+see [Google's privacy policy](https://policies.google.com/privacy).
+
+Google's implementation docs: [JavaScript API](https://developers.google.com/identity/gsi/web/reference/js-reference)
+and [client ID setup](https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid).
 
 ## Adding stations
 
@@ -104,7 +140,7 @@ line in the About view, and check the project name is free to use.
 Optional hardening if your host lets you set headers (GitHub Pages does not):
 
 ```
-Content-Security-Policy: default-src 'self'; media-src https: blob:; connect-src https:; worker-src blob:; img-src 'self' data:; object-src 'none'; base-uri 'none'
+Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com; frame-src https://accounts.google.com; connect-src https:; media-src https: blob:; worker-src blob:; img-src 'self' data: https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'
 ```
 
 ## Licence
