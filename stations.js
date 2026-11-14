@@ -180,5 +180,11 @@ window.STATIONS = [
   { id: "granadafm", name: "Granada FM", desc: "Emisora local con música y programación granadina",
     tags: ["Música","Regional","Andalucía","Granada"], genre: "Música", type: "audio",
     url: "https://streaming2.elitecomunicacion.es:8028/stream",
-    site: "https://granadafm.es/" }
+    site: "https://granadafm.es/" },
+  { id: "gozaderafm", name: "Gozadera FM", desc: "Reguetón, electrolatino y música urbana",
+    tags: ["Música", "Regional", "Andalucía", "Granada", "Reguetón"], genre: "Reguetón", type: "audio",
+    // Public HTTPS stream listed by TDTChannels and radio directories in Nov 2026.
+    // Browser playback and CORS still require end-to-end verification.
+    url: "https://azura.abcorp.es/radio/8030/live",
+    site: "https://gozadera.es/" }
 ];
