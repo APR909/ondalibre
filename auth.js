@@ -149,7 +149,7 @@
       google.accounts.id.disableAutoSelect();
     }
     renderAccount();
-    message("Has cerrado la sesión visible en OndaLibre.");
+    message("Has salido de OndaLibre. Tu sesión general de Google sigue abierta en el navegador.");
     if (panel.open) openGoogle();
   });
 
