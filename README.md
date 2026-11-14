@@ -41,8 +41,23 @@ Suggested repository details ("About" box on the repository page):
 ## On a phone
 
 Open the site and use "Add to Home Screen" (iOS Safari: Share menu; Android Chrome: ⋮ menu) to get a
-full-screen app icon. Playback continues with the screen locked, with controls on the lock screen.
-Volume is set with the phone's hardware keys.
+full-screen app icon. OndaLibre uses HTML `<audio>` and Media Session to support lock-screen playback
+and headset / system-media controls. **Background playback depends on the browser, OS and station
+stream, and cannot be guaranteed by a static PWA.** MP3/AAC and native HLS are generally preferable
+to JavaScript-fed HLS for background playback. Volume is set with the phone's hardware keys.
+
+**Lock-screen smoke test:** on iOS Safari and Android Chrome (and separately as an installed home-screen
+app), start a radio and wait until it says `En directo`. Lock the phone for 2–3 minutes; verify audio
+continues, then test Pause → Play and previous/next from the system player. Repeat with an MP3 station
+and a native-HLS station if available. Incoming calls, battery-saving policies, interrupted internet
+connectivity and OS process eviction can still stop playback. If one station fails, try a different
+stream format before assuming every radio is affected.
+
+To avoid breaking system media controls, an external Pause now **keeps the station media attached**;
+Play attempts to resume the existing element without recreating the stream. Explicit Stop still
+releases it. Where supported, the experimental Audio Session API is configured for `playback`.
+These behaviors have been verified in JavaScript simulations; actual locked-phone playback must
+be checked on devices.
 
 ## Run it
 
