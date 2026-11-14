@@ -9,8 +9,8 @@
  *  - Names only: no logos or artwork without the owner's permission.
  *  - Remove an entry promptly if its broadcaster asks.
  *
- * All URLs below were checked on 2026-11-14: reachable over HTTPS and served
- * with CORS headers (so they play in cookie-less "anonymous" mode).
+ * Original URLs were reviewed on 2026-11-14. New entries are sourced from
+ * published station directories; playback and CORS need browser verification.
  */
 window.STATIONS = [
   { id: "rne", name: "Radio Nacional", desc: "Información y magacines de la radio pública estatal",
@@ -77,6 +77,14 @@ window.STATIONS = [
     tags: ["Música", "Rock"], type: "audio",
     url: "https://rockfm-cope-rrcast.flumotion.com/cope/rockfm.mp3",
     site: "https://www.rockfm.fm/" },
+  { id: "kissfm", name: "Kiss FM", desc: "Grandes éxitos de los 80, 90 y hasta hoy",
+    tags: ["Música", "Clásicos"], type: "audio",
+    url: "https://kissfm.kissfmradio.cires21.com/kissfm.mp3",
+    site: "https://www.kissfm.es/" },
+  { id: "los40classic", name: "LOS40 Classic (antes M80 Radio)", desc: "Clásicos del pop y rock de los 80, 90 y 2000",
+    tags: ["Música", "Clásicos"], type: "audio",
+    url: "https://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_CLASSIC.mp3",
+    site: "https://los40.com/los40_classic/" },
   { id: "radiole", name: "Radiolé", desc: "Copla, flamenco y rumba",
     tags: ["Música", "Flamenco"], type: "audio",
     url: "https://playerservices.streamtheworld.com/api/livestream-redirect/RADIOLE.mp3",
