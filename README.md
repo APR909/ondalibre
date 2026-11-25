@@ -325,26 +325,35 @@ November 2026. These are public HTTPS stream endpoints from broadcasters and the
 providers, **not audio files hosted by OndaLibre**. Availability, browser CORS support and any
 geographical limitations can change; individual new streams still require real-audio browser testing across devices. Private credentials, paid-access streams and geo-block bypass URLs are excluded; publicly listed HLS/CDN paths may still change.
 
-Built-in stations should permit anonymous CORS playback. Kiss FM is an exception: its official
-stream passes through a signed redirect, so OndaLibre uses ordinary browser audio playback
-(no CORS). Its streaming provider could send or set third-party cookies. No cookies are set by
-OndaLibre itself.
+Direct native MP3/AAC audio now uses the browser’s standard media loading mode without
+requiring broadcasters to return CORS headers. This avoids false playback failures and
+reconnection loops caused by `crossorigin="anonymous"` on non-CORS radio endpoints.
+**hls.js still requires CORS** to fetch HLS playlists and media fragments; a site cannot
+work around broadcaster restrictions. Third-party audio hosts receive the client IP and
+technical request data, and cookie handling follows the browser/provider settings.
+OndaLibre sets no first-party cookies.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
 
 ## Automatic reconnection
 
 If an active radio encounters a network/media error, a fatal hls.js failure, an unexpected end
-of the stream, or continuous buffering for **15 seconds**, OndaLibre attempts a fresh connection.
+of the stream, or continuous buffering for **30 seconds while the page is visible**,
+OndaLibre attempts a fresh connection only if audio has not made progress.
 Reconnect delays increase through **2, 5, 10, 20 and 30 seconds** (maximum five retries).
-The initial connection also has a **20-second timeout**. If the station still fails, the
+The initial connection also has a **30-second timeout**, deferred while the page is hidden.
+If the station still fails, the
 player shows **Sin señal. Pulsa Reproducir.** and stops automatically retrying.
 A healthy session that plays uninterrupted for at least 60 seconds resets the retry budget.
 
-When the browser reports that the device is **offline**, the player waits without network
-polling and retries immediately on the browser's **online** event. It does not restart an
+A browser **offline** notification alone does not interrupt a stream that is already
+playing; only a genuine media failure causes it to wait for a new network connection.
+Once an actual error has occurred offline, the player waits without polling and retries
+on the **online** event. It does not restart an
 explicitly stopped station, a station paused from system/headset controls, or a station replaced
 by another. Autoplay permission errors require a fresh manual Play gesture instead of
-automatic attempts. The existing MP3/AAC-to-HLS and custom CORS fallbacks remain in place.
+automatic attempts. A broken optional MP3/AAC alternative is skipped during later retries,
+rather than bouncing between the same bad source and HLS repeatedly. Native audio no longer
+requires CORS; only hls.js needs cross-origin manifest and fragment access.
 
 **Browser limitation:** hidden-tab timers can be throttled or suspended on Android/iOS;
 reconnection cannot execute while the browser process is suspended or terminated. This
