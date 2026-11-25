@@ -120,7 +120,7 @@ Any static host works; GitHub Pages is described above.
 - Responsive **Ahora suena** panel with station-matched, recent song/artist metadata for 12 additional music broadcasters (best-effort third-party coverage); generic fallback elsewhere
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
-- Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
+- Accent-insensitive search, combinable content/genre/region filters, quick views (Granada, music, news), live results counter, favourites and custom stations (kept in `localStorage`)
 - **Para ti** at the top of the catalogue: one-tap recent/favorite station shortcuts, a full favorites view and a clear-recent-history control
 - 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Station logos in the directory and bottom player, with safe text fallback if a provider blocks an image
@@ -159,6 +159,38 @@ screenshots and traces when a browser test fails.
 See [GitHub Actions](https://github.com/APR909/ondalibre/actions) and
 `.github/workflows/reconnect-tests.yml`. Test suites are under `tests/`, and
 `playwright.config.cjs` configures the two Chromium viewports.
+
+## Filters and navigation
+
+The station catalogue now has three independent, native HTML selectors, designed for
+keyboard, screen reader and touch use:
+
+- **Contenido**: all stations, music, news/programmes or personal stations. It uses
+  the existing editorial genre and personal-radio list rather than assuming
+  that a public broadcaster necessarily broadcasts news.
+- **Género**: the real genres available for the chosen type (e.g. pop, rock,
+  flamenco, classical). Changing content type removes an incompatible genre
+  selection instead of trapping the user in an empty list.
+- **Zona**: national coverage, a supported autonomous community, local Granada
+  stations or personal stations. Canal Sur/Canal Fiesta and Catalunya Ràdio/iCat
+  have been correctly tagged as regional services; Granada radio is also part
+  of the Andalusian category.
+
+Selectors can be combined with the search box and **Favoritas**. Searches are
+accent-insensitive and include station name, editorial description, genre
+and regional tags. A visible live result counter reports how many of the
+41+ stations match, and **Limpiar filtros** restores the complete list.
+Convenient quick filters (**Todas**, **Música**, **Noticias**, **Granada**)
+switch directly to common views. **Para ti** → **Ver todas** resets search,
+genre and zone but preserves favorite selection. All filters remain local
+to the page and do not reconnect or stop the current radio.
+
+Filter options update when a personal station is added/removed. The full
+catalogue can always be restored even after no results. The interface uses
+one-column native dropdowns on phones and three columns on wide screens.
+The Chromium regression suite covers type/genre combinations, communities,
+Granada, search, empty states, shortcuts, favorites and custom stations.
+No new libraries or servers are required.
 
 ## Personalized home: «Para ti»
 
