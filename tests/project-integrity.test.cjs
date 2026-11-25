@@ -89,7 +89,7 @@ function validateProject() {
     }
   });
   verify("Station catalog has unique IDs and required metadata", () => {
-    assert(Array.isArray(stations) && stations.length >= 41, "Unexpected station count");
+    assert(Array.isArray(stations) && stations.length >= 60, "Unexpected station count");
     const unique = new Set();
     for (const s of stations) {
       assert(typeof s.id === "string" && /^[a-z0-9_-]+$/.test(s.id), "Invalid station ID");
@@ -99,6 +99,34 @@ function validateProject() {
       assert(typeof s.desc === "string" && typeof s.genre === "string", "Missing genre/desc for "+s.id);
       assert(Array.isArray(s.tags) && s.tags.every(t => typeof t === "string"), "Invalid tags: "+s.id);
       assert(["audio","hls"].includes(s.type), "Unexpected stream type: "+s.id);
+    }
+  });
+  verify("Expansion includes 19 expected broadcasters without duplicate streams", () => {
+    const expected = [
+      "radiomarca", "capitalradio", "radiointereconomia", "los40urban",
+      "los40dance", "radiomaria", "rac105", "flaixfm", "flaixbac",
+      "radioteletaxi", "apunt", "ondaregional", "ondaregionalmusica",
+      "ondavasca", "flamencoradio", "copegranada", "ondacadiz",
+      "esradiocyl", "radio7"
+    ];
+    const ids = new Set(stations.map(x => x.id));
+    for (const id of expected) assert(ids.has(id), "Missing newly added station: " + id);
+    const urls = stations.map(x => x.url);
+    assert(urls.length === new Set(urls).size, "Duplicate stream URL");
+  });
+  verify("Expanded station regions and audio formats are valid", () => {
+    const allowedRegions = ["Andalucía","Aragón","Asturias","Baleares","Canarias",
+      "Castilla-La Mancha","Castilla y León","Cataluña","Comunidad Valenciana",
+      "Extremadura","Galicia","Murcia","País Vasco"];
+    const newStations = stations.slice(41);
+    for (const st of newStations) {
+      assert(st.tags.includes("Nacional") ||
+        st.tags.some(tag => allowedRegions.includes(tag)),
+        "Missing expansion area for " + st.id);
+      if (st.type === "hls") assert(/\\.m3u8(?:[?#]|$)/.test(st.url),
+        "Invalid HLS playlist for " + st.id);
+      if (st.type === "audio") assert(!/\\.m3u8(?:[?#]|$)/.test(st.url),
+        "Unexpected HLS for audio station " + st.id);
     }
   });
   verify("Station URLs and logos use HTTPS", () => {
