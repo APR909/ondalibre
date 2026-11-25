@@ -74,12 +74,15 @@ optional functionality under LSSI art. 22.2 and applicable privacy law; this not
 legal determination. Adding remote analytics, ads or embeds would require further review.
 
 ### 2.7 Personal data — small residual
-- The optional “Ahora suena” feature retrieves song metadata from configured broadcaster APIs
-  only while a station is playing. The Gozadera FM integration points to an AzuraCast
-  endpoint hosted at azura.abcorp.es; this endpoint's CORS behavior and availability must
-  be confirmed in a real browser. The metadata host receives IP/connection metadata,
-  but the client sends no Google tokens, favourites or listening history. Review provider
-  terms, information duties and consent implications before enabling more sources.
+- The optional “Ahora suena” feature may retrieve track titles from the public Tuneping
+  API (api.tuneping.com) when one of 12 configured Spanish music stations is played and
+  the page is visible. It first looks up the station by exact name and country, then
+  queries the uniquely matched station UUID. Ambiguous matches, outdated data and
+  non-song classifications are rejected. Gozadera FM continues to use its own AzuraCast
+  endpoint at azura.abcorp.es. The browser omits credentials and referrer, never sends
+  Google tokens, favourites or listening history, and stops polling in hidden tabs.
+  Providers still receive IP/request metadata. Real-device API/CORS availability and
+  applicable usage terms and privacy/consent duties require review before publication.
 - Station logos are fetched directly from external image providers, including Facebook/X and
   Wikimedia, when the relevant image enters view or is selected. These hosts may receive the
   visitor's IP address and request metadata. List images are lazy-loaded with no referrer, but
