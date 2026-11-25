@@ -119,3 +119,125 @@ test("About, settings and 390px layout remain navigable", async ({ page }) => {
   }));
   expect(width.content).toBeLessThanOrEqual(width.viewport + 2);
 });
+
+
+test("grouped content, genre and region selectors are labeled and show station counts", async ({ page }) => {
+  await expect(page.getByLabel("Contenido", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Género", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Zona", { exact: true })).toBeVisible();
+  await expect(page.locator("#filterCount")).toHaveText("41 emisoras disponibles");
+  await expect(page.locator("#clearFilters")).toBeHidden();
+  await expect(page.locator("#filterRegion option[value='Andalucía']")).toHaveText("Andalucía");
+  await expect(page.locator("#filterRegion option[value='granada']")).toContainText("Granada");
+  await expect(page.locator("#filterGenre option[value='Clásica']")).toHaveText("Clásica");
+});
+
+test("content choices filter music/news and genres adapt to the chosen type", async ({ page }) => {
+  await page.locator("#filterType").selectOption("music");
+  await expect(page.locator("#list li.st")).toHaveCount(19);
+  await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='radio5']")).toHaveCount(0);
+  await page.locator("#filterGenre").selectOption("Rock");
+  await expect(page.locator("#list li.st")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(1);
+  await page.locator("#filterType").selectOption("news");
+  await expect(page.locator("#filterGenre")).toHaveValue("all");
+  await expect(page.locator("#filterGenre option[value='Rock']")).toHaveCount(0);
+  await expect(page.locator("#list li.st")).toHaveCount(22);
+  await expect(page.locator("#list [data-id='radio5']")).toHaveCount(1);
+});
+
+test("autonomous community includes regional public stations and Granada locals", async ({ page }) => {
+  await page.locator("#filterRegion").selectOption("Andalucía");
+  await expect(page.locator("#list li.st")).toHaveCount(6);
+  await expect(page.locator("#list [data-id='canalsur']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='canalfiesta']")).toHaveCount(1);
+  await page.locator("#filterRegion").selectOption("Cataluña");
+  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#list [data-id='catradio']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='icat']")).toHaveCount(1);
+  await page.locator("#filterRegion").selectOption("granada");
+  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#list [data-id='sergranada']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(0);
+});
+
+test("combinable filters report correct count and can be cleared together", async ({ page }) => {
+  await page.locator("#filterType").selectOption("music");
+  await page.locator("#filterRegion").selectOption("Andalucía");
+  await expect(page.locator("#list li.st")).toHaveCount(3);
+  await expect(page.locator("#filterCount")).toHaveText("Mostrando 3 de 41 emisoras");
+  await page.locator("#filterGenre").selectOption("Reguetón");
+  await expect(page.locator("#list li.st")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='gozaderafm']")).toHaveCount(1);
+  await page.locator("#q").fill("no-existe");
+  await expect(page.locator("#list li.empty")).toHaveCount(1);
+  await expect(page.locator("#filterCount")).toHaveText("Mostrando 0 de 41 emisoras");
+  await page.locator("#clearFilters").click();
+  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#filterType")).toHaveValue("all");
+  await expect(page.locator("#filterGenre")).toHaveValue("all");
+  await expect(page.locator("#filterRegion")).toHaveValue("all");
+  await expect(page.locator("#q")).toHaveValue("");
+  await expect(page.locator("#clearFilters")).toBeHidden();
+});
+
+test("search ignores accents and includes region and music metadata", async ({ page }) => {
+  await page.locator("#q").fill("clasica");
+  await expect(page.locator("#list [data-id='radioclasica']")).toHaveCount(1);
+  await page.locator("#q").fill("pais vasco");
+  await expect(page.locator("#list li.st")).toHaveCount(5);
+  await page.locator("#q").fill("galicia");
+  await expect(page.locator("#list li.st")).toHaveCount(2);
+  await page.locator("#q").fill("");
+  await expect(page.locator("#list li.st")).toHaveCount(41);
+});
+
+test("popular shortcuts reset other filters without changing audio", async ({ page }) => {
+  await page.locator("#q").fill("Rock FM");
+  await page.locator("#list .st-fav").click();
+  await page.locator("#btnFav").click();
+  await page.locator("#filterType").selectOption("music");
+  await page.locator('#chips [data-preset="granada"]').click();
+  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#filterRegion")).toHaveValue("granada");
+  await expect(page.locator("#btnFav")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("#q")).toHaveValue("");
+  await expect(page.locator('#chips [data-preset="granada"]')).toHaveAttribute("aria-pressed", "true");
+  await page.locator('#chips [data-preset="news"]').click();
+  await expect(page.locator("#list li.st")).toHaveCount(22);
+  await page.locator('#chips [data-preset="all"]').click();
+  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator('#personalFavorites [data-quick-play="rockfm"]')).toBeVisible();
+});
+
+test("custom stations appear in dedicated type and zone and can be deleted", async ({ page }) => {
+  await page.locator("#btnAdd").click();
+  await page.locator("#fName").fill("Mi Radio Demo");
+  await page.locator("#fUrl").fill("https://example.invalid/live.mp3");
+  await page.locator('#frm button[value="ok"]').click();
+  await page.locator("#filterType").selectOption("custom");
+  await expect(page.locator("#list li.st")).toHaveCount(1);
+  await expect(page.locator("#filterGenre option[value='Personalizadas']")).toHaveCount(1);
+  await page.locator("#filterRegion").selectOption("custom");
+  await expect(page.locator("#list li.st")).toHaveCount(1);
+  await expect(page.locator("#list .st-name")).toHaveText("Mi Radio Demo");
+  await page.locator("#list .st-del").click();
+  await expect(page.locator("#list li.empty")).toHaveCount(1);
+  await page.locator("#clearFilters").click();
+  await expect(page.locator("#list li.st")).toHaveCount(41);
+});
+
+test("view all favorites clears category filters but preserves favorites", async ({ page }) => {
+  await page.locator("#q").fill("Rock FM");
+  await page.locator("#list .st-fav").click();
+  await page.locator("#filterRegion").selectOption("Andalucía");
+  await expect(page.locator("#list li.empty")).toHaveCount(1);
+  await page.locator("#personalShowFavorites").click();
+  await expect(page.locator("#list li.st")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(1);
+  await expect(page.locator("#filterRegion")).toHaveValue("all");
+  await expect(page.locator("#filterType")).toHaveValue("all");
+  await expect(page.locator("#q")).toHaveValue("");
+  await expect(page.locator("#btnFav")).toHaveAttribute("aria-pressed", "true");
+});
