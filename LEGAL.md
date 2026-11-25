@@ -9,7 +9,7 @@ beyond a personal project, have a lawyer confirm sections 2.1 and 2.5.
 | # | Problem in the previous version | Why it mattered | Fix |
 |---|---|---|---|
 | 1 | hls.js was loaded from the jsDelivr CDN | Every visitor's IP address went to a third party with no notice (GDPR arts. 5 and 13) | Library is now bundled in `lib/`; loading the page contacts only your own host |
-| 2 | Stream servers could set cookies. Some providers send identifying cookies | Third-party identifier cookies may require consent under LSSI art. 22.2 | Most built-in streams use CORS anonymous mode; Kiss FM instead requires normal media mode and its server could set cookies. The privacy notice discloses this exception; assess consent requirements before publication. `no-referrer` hides the page address from stream servers |
+| 2 | Stream servers could set cookies. Some providers send identifying cookies | Third-party identifier cookies may require consent under LSSI art. 22.2 | Native MP3/AAC streams now use standard browser media mode without requiring CORS headers; HLS.js still needs CORS for fetched playlists and segments. Audio providers receive client IP and request data, and cookie handling depends on browser/provider rules. Privacy notice updated; review applicable consent requirements. |
 | 3 | Radio MARCA was linked by a direct URL, while its official source is served through a geo-block endpoint | Linking around an access restriction counts as a new communication to the public (CJEU, VG Bild-Kunst, C-392/19) | Station removed |
 | 4 | Several URLs pointed at numbered relay servers that rotate; MáximaFM, iCat and Canal Sur returned errors | Broken, and not the broadcaster's published entry point | Replaced with broadcasters' own entry points; MáximaFM removed. Kiss FM was later re-added using its ad-handler redirect with an explicit non-CORS media exception |
 | 5 | No privacy information, no non-affiliation statement, no takedown route | Transparency duty (GDPR art. 13); the link safe harbour depends on acting when notified (LSSI art. 17) | "Acerca de" view with privacy, legal notice and takedown sections |
@@ -63,7 +63,7 @@ A purely personal, non-commercial page is outside the LSSI. Once there is any ec
 (ads, donations, sponsorship) you must show your name, tax ID, address and e-mail. Either way, the
 About view needs a real contact so takedown requests can reach you; it currently shows a placeholder.
 
-### 2.6 Cookies and local storage — review the Kiss FM exception
+### 2.6 Cookies and local storage — review external media requests
 `localStorage` holds device preferences (theme, volume, favourites, own stations and last
 station) and now a bounded list of up to eight recently played station IDs for «Para ti».
 Recent history is written only when audio starts playing and can be cleared from the
@@ -97,12 +97,14 @@ legal determination. Adding remote analytics, ads or embeds would require furthe
   mentions it in general terms; name the host there if you want to be thorough.
 - When a listener plays a station, the broadcaster's servers see the listener's IP address. That is
   inherent in direct playback and is disclosed.
-- Built-in Kiss FM uses normal audio mode because its broadcaster issues a signed stream URL via a
-  redirect; the streaming provider could set or read third-party cookies when the listener chooses it.
-  Review applicable consent requirements before deploying this exception.
-- Stations a listener adds are tried in anonymous mode first; if their server lacks CORS headers the
-  player falls back to normal mode, where that server could set cookies. This is disclosed and only
-  affects streams the listener chose to add.
+- Native direct audio streams (including listener-added streams) now use the browser’s ordinary
+  media loading mode without demanding CORS response headers. This reduces avoidable failures
+  from non-CORS broadcaster servers. It also means third-party audio providers receive IP and
+  technical connection data and may handle cookies according to browser and provider policies.
+  The first-party page does not create its own cookies or send Google data to stream providers.
+- hls.js loads HLS playlists and fragments through JavaScript and still requires appropriate CORS
+  response headers; native audio mode cannot bypass this requirement. Check applicable privacy
+  and consent duties for the newly enabled streaming behavior before commercial publication.
 
 ### 2.8 Optional Google Identity Services
 - Two local listening-statistics tabs (radios and genres) become available after Google login.
