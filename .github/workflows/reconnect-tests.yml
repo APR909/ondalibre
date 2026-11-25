@@ -1,0 +1,27 @@
+name: OndaLibre player regression tests
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check browser JavaScript syntax
+        run: |
+          node --check app.js
+          node --check stations.js
+          node --check stats.js
+          node --check auth.js
+          node --check auth-config.js
+          node --check now-playing.js
+          node --check theme.js
+      - name: Player and reconnection regression tests
+        run: node tests/reconnect.test.cjs
