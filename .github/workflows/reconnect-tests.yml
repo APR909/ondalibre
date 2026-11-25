@@ -1,12 +1,19 @@
-name: OndaLibre player regression tests
+name: OndaLibre automated quality checks
+
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 jobs:
-  test:
+  unit:
+    name: Project integrity, core logic and privacy
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -14,18 +21,38 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check browser JavaScript syntax
+      - name: Check JavaScript syntax
         run: |
-          node --check app.js
-          node --check stations.js
-          node --check stats.js
-          node --check auth.js
-          node --check auth-config.js
-          node --check now-playing.js
-          node --check theme.js
-      - name: Player and reconnection regression tests
-        run: node tests/reconnect.test.cjs
-      - name: Now-playing metadata regression tests
-        run: node tests/now-playing.test.cjs
-      - name: Personalized home regression tests
-        run: node tests/personal-home.test.cjs
+          for file in app.js stations.js stats.js auth.js auth-config.js now-playing.js theme.js tests/*.cjs playwright.config.cjs; do
+            node --check "$file"
+          done
+      - name: Run all dependency-free tests
+        run: npm test
+
+  browser:
+    name: Browser UI on desktop and Android viewport
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright test runner
+        run: npm install --no-audit --no-fund
+      - name: Install Chromium and system dependencies
+        run: npx playwright install chromium --with-deps
+      - name: Run browser smoke tests
+        run: npm run test:browser
+      - name: Upload screenshots and traces if tests fail
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7
