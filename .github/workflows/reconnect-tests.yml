@@ -25,3 +25,5 @@ jobs:
           node --check theme.js
       - name: Player and reconnection regression tests
         run: node tests/reconnect.test.cjs
+      - name: Now-playing metadata regression tests
+        run: node tests/now-playing.test.cjs
