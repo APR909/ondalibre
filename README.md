@@ -2,7 +2,7 @@
 
 # OndaLibre
 
-**OndaLibre — radio en directo con estética neón y código abierto.** Escucha 41 emisoras españolas
+**OndaLibre — radio en directo con estética neón y código abierto.** Escucha 60 emisoras españolas
 nacionales, autonómicas y locales desde una interfaz rápida y luminosa para móvil y ordenador.
 
 - Static files only: no backend, no build step, no required account
@@ -15,7 +15,7 @@ nacionales, autonómicas y locales desde una interfaz rápida y luminosa para m�
 - Installable on a phone's home screen
 - MIT licensed and small enough to read in one sitting
 
-*Reproductor de radio online con diseño neón. 41 emisoras españolas, favoritas y filtros regionales; sin servidor propio ni cuentas obligatorias.*
+*Reproductor de radio online con diseño neón. 60 emisoras españolas, favoritas y filtros regionales; sin servidor propio ni cuentas obligatorias.*
 
 ## Publish on GitHub Pages
 
@@ -36,7 +36,7 @@ The folder is ready as-is: all paths are relative, so it works under `https://US
 
 Suggested repository details ("About" box on the repository page):
 
-- **Description:** `Radio online de código abierto con estética neón. 41 emisoras españolas en directo, favoritas, filtros regionales y PWA.`
+- **Description:** `Radio online de código abierto con estética neón. 60 emisoras españolas en directo, favoritas, filtros regionales y PWA.`
 - **Topics:** `radio` `web-radio` `internet-radio` `hls` `vanilla-js` `static-site` `pwa` `accessibility` `spain` `neon-design`
 - **Social preview** (Settings → General): upload `assets/social-preview.png` when refreshed with the Neon design.
 
@@ -122,7 +122,7 @@ Any static host works; GitHub Pages is described above.
 - Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Accent-insensitive search, combinable content/genre/region filters, quick views (Granada, music, news), live results counter, favourites and custom stations (kept in `localStorage`)
 - **Para ti** at the top of the catalogue: one-tap recent/favorite station shortcuts, a full favorites view and a clear-recent-history control
-- 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
+- 60 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Station logos in the directory and bottom player, with safe text fallback if a provider blocks an image
 - Current volume percentage shown next to the desktop slider
 - Phone layout with large touch targets, safe-area support and lock-screen controls
@@ -136,7 +136,7 @@ Actions dispatch. Two independent CI jobs ensure a failing unit test cannot be h
 an unrelated browser result:
 
 - **Node.js, zero runtime dependencies:** project integrity (PWA icons and actual PNG
-  dimensions, asset/script links, HTML IDs, accessibility label references, 41 unique
+  dimensions, asset/script links, HTML IDs, accessibility label references, 60 unique
   station entries, HTTPS stream/logo URLs and safe script order); radio reconnection,
   favorites/recent stations, musical metadata, optional Google sign-in UI and private
   listening statistics. Run `npm test` with Node.js 22 or newer; **no npm install is
@@ -179,7 +179,7 @@ keyboard, screen reader and touch use:
 Selectors can be combined with the search box and **Favoritas**. Searches are
 accent-insensitive and include station name, editorial description, genre
 and regional tags. A visible live result counter reports how many of the
-41+ stations match, and **Limpiar filtros** restores the complete list.
+60+ stations match, and **Limpiar filtros** restores the complete list.
 Convenient quick filters (**Todas**, **Música**, **Noticias**, **Granada**)
 switch directly to common views. **Para ti** → **Ver todas** resets search,
 genre and zone but preserves favorite selection. All filters remain local
@@ -270,6 +270,38 @@ and [client ID setup](https://developers.google.com/identity/gsi/web/guides/get-
   are convenience features, not a secure authentication or access-control boundary. For verified
   identities, cloud synchronization or global popularity charts, use a backend and database.
 
+## Ampliación de emisoras — noviembre de 2026
+
+OndaLibre incorpora **19 emisoras nuevas**, para un catálogo total de **60 radios españolas**.
+Las URLs públicas y los enlaces oficiales proceden del
+[directorio TDTChannels](https://github.com/LaQuay/TDTChannels/blob/master/RADIO.md).
+
+| Ámbito | Emisoras incorporadas |
+|---|---|
+| Nacional — deporte, economía y programas | Radio Marca, Capital Radio, Radio Intereconomía, Radio María |
+| Nacional — música urbana y electrónica | LOS40 Urban, LOS40 Dance |
+| Cataluña | RAC105, Flaix FM, Flaixbac, Radio TeleTaxi |
+| Comunidad Valenciana | À Punt Ràdio |
+| Región de Murcia | Onda Regional de Murcia, Onda Regional Música |
+| País Vasco | Onda Vasca, Radio 7 |
+| Andalucía y Granada | Flamenco Radio, COPE Granada, Onda Cádiz Radio |
+| Castilla y León | esRadio Castilla y León |
+
+Cada nueva entrada incluye un identificador único, género editorial, región, URL de
+emisión, enlace a la web oficial e imagen enlazada desde el directorio. Las radios
+deportivas, económicas y habladas se agrupan con **Noticias y programas**, no con
+Música. Los filtros permiten explorar también Comunidad Valenciana, Murcia y
+Castilla y León, y el acceso rápido **Granada** incorpora COPE Granada.
+
+Se conservan las fuentes MP3/AAC cuando las emisoras las publican, y HLS donde
+es el formato disponible. Las pruebas automáticas verifican la integridad del
+catálogo, la ausencia de IDs y URLs duplicadas y la integración con búsqueda,
+filtros, favoritas, historial y controles de reproducción. Las pruebas de
+Chromium **simulan el audio** y no garantizan que una URL externa siga emitiendo
+ni la reproducción con el móvil bloqueado. Las 19 fuentes nuevas requieren una
+comprobación de audio real por emisora y dispositivo; los proveedores pueden
+cambiar sus CDN o restricciones CORS. OndaLibre no aloja ni redistribuye el sonido.
+
 ## Adding stations
 
 Use the "Añadir" button (saved in that browser only) or edit `stations.js`:
@@ -281,7 +313,8 @@ Use the "Añadir" button (saved in that browser only) or edit `stations.js`:
 
 Follow the rules in the header of `stations.js`: official, freely accessible streams only, always
 with the broadcaster's website. The list includes national networks and regional broadcasters
-from Aragón, Asturias, Baleares, Canarias, Castilla-La Mancha, Cataluña, Extremadura, Galicia,
+from Aragón, Asturias, Baleares, Canarias, Castilla-La Mancha, Castilla y León,
+Cataluña, Comunidad Valenciana, Extremadura, Galicia, Murcia,
 the Basque Country and Andalusia. Use the **Regional** filter or a community name to narrow the
 list; each station also has a primary genre for local listening statistics. Gozadera FM
 is included under Reguetón, Andalucía and Granada.
@@ -290,8 +323,7 @@ Streams were cross-referenced with broadcaster pages and the
 [TDTChannels radio directory](https://github.com/LaQuay/TDTChannels/blob/master/RADIO.md) in
 November 2026. These are public HTTPS stream endpoints from broadcasters and their delivery
 providers, **not audio files hosted by OndaLibre**. Availability, browser CORS support and any
-geographical limitations can change; the new streams have **not been playback-tested in a browser**
-from this environment. Stations requiring expiring tokens are deliberately excluded.
+geographical limitations can change; individual new streams still require real-audio browser testing across devices. Private credentials, paid-access streams and geo-block bypass URLs are excluded; publicly listed HLS/CDN paths may still change.
 
 Built-in stations should permit anonymous CORS playback. Kiss FM is an exception: its official
 stream passes through a signed redirect, so OndaLibre uses ordinary browser audio playback
