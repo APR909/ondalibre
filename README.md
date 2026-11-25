@@ -6,6 +6,7 @@
 nacionales, autonómicas y locales desde una interfaz rápida y luminosa para móvil y ordenador.
 
 - Static files only: no backend, no build step, no required account
+- Personalized home with one-tap favorites and recent stations, stored locally without sign-in
 - No first-party cookies or remote analytics; personal listening history stays on-device. Audio hosts are contacted on playback, logo providers when station images appear, and Google only when the account panel is opened
 - Animated mini equalizer in the player while audio is actually playing (respects reduced-motion settings)
 - Compact **Ahora suena** panel: current track title/artist when a supported station provides public data; otherwise an accurate station-category description
@@ -95,10 +96,10 @@ Any static host works; GitHub Pages is described above.
 
 | File | Purpose |
 |---|---|
-| `index.html` | Markup: station list, About view (`#about`), player bar |
+| `index.html` | Markup: personalized home, station list, About and stats views, player bar |
 | `styles.css` | All styling; the three themes are custom-property blocks at the top |
 | `theme.js` | Applies the saved theme before first paint |
-| `app.js` | Player logic, list, favourites, custom stations |
+| `app.js` | Player logic, personalized home, recent listening history, favourites, custom stations |
 | `stations.js` | The station directory, including external logo URLs — edit this to make it yours |
 | `auth-config.js` | Public Google OAuth web client ID for this deployment |
 | `auth.js` | Loads Google Identity Services on request; derives a pseudonymous local account key |
@@ -120,12 +121,37 @@ Any static host works; GitHub Pages is described above.
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
+- **Para ti** at the top of the catalogue: one-tap recent/favorite station shortcuts, a full favorites view and a clear-recent-history control
 - 41 curated Spanish stations: national networks, autonomous public broadcasters and local radio (including Granada)
 - Station logos in the directory and bottom player, with safe text fallback if a provider blocks an image
 - Current volume percentage shown next to the desktop slider
 - Phone layout with large touch targets, safe-area support and lock-screen controls
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
+
+## Personalized home: «Para ti»
+
+The top of the Emisoras page now has two compact panels:
+
+- **Favoritas**: up to six quick-play station cards, including a direct link to the existing
+  filtered favorites list (**Ver todas**). Changes to favorite stars immediately update
+  the panel; adding favorites does not require Google login.
+- **Escuchadas recientemente**: up to six quick-play shortcuts, ordered from newest to
+  oldest. The browser stores at most **eight unique station IDs** in
+  `localStorage["ondalibre.recents.v1"]`. History is updated **only after the audio fires
+  a successful `playing` event**, not when a station is selected, merely connecting,
+  buffering or failing. Re-listening moves a station to the front.
+- **Borrar historial** clears only these local recent shortcuts. It does not remove
+  favorites, playback, signed-in listening statistics or other settings.
+- Both panels use the same player controls as the full list: changing stations works
+  even when the catalogue is filtered, and selecting the current station again stops it.
+  Removing a personal station removes it from quick access and recent history.
+- No backend, new permissions or third-party libraries are required. These preferences
+  are **per browser/device**, independent of the optional Google login, and are not
+  synchronized or uploaded. Storage errors and malformed history are handled safely.
+
+Run `node tests/personal-home.test.cjs` for the 12 focused regression tests.
+The existing player and Now Playing tests continue to run unchanged.
 
 ## Optional Google sign-in (static GitHub Pages)
 
