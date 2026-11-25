@@ -504,7 +504,7 @@
     retryTimer = setTimeout(() => {
       retryTimer = 0;
       if (!wantsPlayback || state !== "retrying" || current !== station) return;
-      connect(station, station.cors !== "no-cors", true, true);
+      connect(station, station.cors === "anonymous", true, true);
     }, delay);
   }
 
@@ -751,7 +751,7 @@
   window.addEventListener("online", () => {
     if (wantsPlayback && current && state === "retrying") {
       clearTimeout(retryTimer); retryTimer = 0;
-      connect(current, current.cors !== "no-cors", true, true);
+      connect(current, current.cors === "anonymous", true, true);
     }
   });
 
