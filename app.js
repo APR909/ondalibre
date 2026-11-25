@@ -445,6 +445,8 @@
 
   function bufferWatchdog() {
     if (!wantsPlayback || !["live", "buffering"].includes(state)) return;
+    // Repeated "waiting" events must not postpone an existing deadline.
+    if (state === "buffering" && stallTimer) return;
     setState("buffering", "Cargando…");
     clearTimeout(stallTimer);
     stallTimer = setTimeout(() => {
