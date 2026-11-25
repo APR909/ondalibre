@@ -12,7 +12,8 @@
   if (!titleEl || !detailEl || !audio) return;
 
   const musicGenres = new Set(["Pop", "Rock", "Clásica", "Clásicos",
-    "Música", "Música en español", "Alternativa", "Flamenco", "Reguetón"]);
+    "Música", "Música en español", "Alternativa", "Flamenco", "Reguetón",
+    "Urbana", "Electrónica"]);
   const SUCCESS_INTERVAL_MS = 60000;
   const FAILURE_INTERVAL_MS = 180000;
   const REQUEST_TIMEOUT_MS = 8000;
