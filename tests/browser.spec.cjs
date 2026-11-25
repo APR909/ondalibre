@@ -36,7 +36,7 @@ test.afterEach(async ({ page }) => {
 });
 
 test("homepage, radio directory, and accessibility essentials render", async ({ page }) => {
-  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#list li.st")).toHaveCount(60);
   await expect(page.getByRole("heading", { name: "Para ti" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Favoritas", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Escuchadas recientemente" })).toBeVisible();
@@ -125,7 +125,7 @@ test("grouped content, genre and region selectors are labeled and show station c
   await expect(page.getByLabel("Contenido", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Género", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Zona", { exact: true })).toBeVisible();
-  await expect(page.locator("#filterCount")).toHaveText("41 emisoras disponibles");
+  await expect(page.locator("#filterCount")).toHaveText("60 emisoras disponibles");
   await expect(page.locator("#clearFilters")).toBeHidden();
   await expect(page.locator("#filterRegion option[value='Andalucía']")).toHaveText("Andalucía");
   await expect(page.locator("#filterRegion option[value='granada']")).toContainText("Granada");
@@ -134,7 +134,7 @@ test("grouped content, genre and region selectors are labeled and show station c
 
 test("content choices filter music/news and genres adapt to the chosen type", async ({ page }) => {
   await page.locator("#filterType").selectOption("music");
-  await expect(page.locator("#list li.st")).toHaveCount(19);
+  await expect(page.locator("#list li.st")).toHaveCount(27);
   await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(1);
   await expect(page.locator("#list [data-id='radio5']")).toHaveCount(0);
   await page.locator("#filterGenre").selectOption("Rock");
@@ -143,21 +143,21 @@ test("content choices filter music/news and genres adapt to the chosen type", as
   await page.locator("#filterType").selectOption("news");
   await expect(page.locator("#filterGenre")).toHaveValue("all");
   await expect(page.locator("#filterGenre option[value='Rock']")).toHaveCount(0);
-  await expect(page.locator("#list li.st")).toHaveCount(22);
+  await expect(page.locator("#list li.st")).toHaveCount(33);
   await expect(page.locator("#list [data-id='radio5']")).toHaveCount(1);
 });
 
 test("autonomous community includes regional public stations and Granada locals", async ({ page }) => {
   await page.locator("#filterRegion").selectOption("Andalucía");
-  await expect(page.locator("#list li.st")).toHaveCount(6);
+  await expect(page.locator("#list li.st")).toHaveCount(9);
   await expect(page.locator("#list [data-id='canalsur']")).toHaveCount(1);
   await expect(page.locator("#list [data-id='canalfiesta']")).toHaveCount(1);
   await page.locator("#filterRegion").selectOption("Cataluña");
-  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#list li.st")).toHaveCount(8);
   await expect(page.locator("#list [data-id='catradio']")).toHaveCount(1);
   await expect(page.locator("#list [data-id='icat']")).toHaveCount(1);
   await page.locator("#filterRegion").selectOption("granada");
-  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#list li.st")).toHaveCount(5);
   await expect(page.locator("#list [data-id='sergranada']")).toHaveCount(1);
   await expect(page.locator("#list [data-id='rockfm']")).toHaveCount(0);
 });
@@ -165,16 +165,16 @@ test("autonomous community includes regional public stations and Granada locals"
 test("combinable filters report correct count and can be cleared together", async ({ page }) => {
   await page.locator("#filterType").selectOption("music");
   await page.locator("#filterRegion").selectOption("Andalucía");
-  await expect(page.locator("#list li.st")).toHaveCount(3);
-  await expect(page.locator("#filterCount")).toHaveText("Mostrando 3 de 41 emisoras");
+  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#filterCount")).toHaveText("Mostrando 4 de 60 emisoras");
   await page.locator("#filterGenre").selectOption("Reguetón");
   await expect(page.locator("#list li.st")).toHaveCount(1);
   await expect(page.locator("#list [data-id='gozaderafm']")).toHaveCount(1);
   await page.locator("#q").fill("no-existe");
   await expect(page.locator("#list li.empty")).toHaveCount(1);
-  await expect(page.locator("#filterCount")).toHaveText("Mostrando 0 de 41 emisoras");
+  await expect(page.locator("#filterCount")).toHaveText("Mostrando 0 de 60 emisoras");
   await page.locator("#clearFilters").click();
-  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#list li.st")).toHaveCount(60);
   await expect(page.locator("#filterType")).toHaveValue("all");
   await expect(page.locator("#filterGenre")).toHaveValue("all");
   await expect(page.locator("#filterRegion")).toHaveValue("all");
@@ -186,11 +186,11 @@ test("search ignores accents and includes region and music metadata", async ({ p
   await page.locator("#q").fill("clasica");
   await expect(page.locator("#list [data-id='radioclasica']")).toHaveCount(1);
   await page.locator("#q").fill("pais vasco");
-  await expect(page.locator("#list li.st")).toHaveCount(5);
+  await expect(page.locator("#list li.st")).toHaveCount(7);
   await page.locator("#q").fill("galicia");
   await expect(page.locator("#list li.st")).toHaveCount(2);
   await page.locator("#q").fill("");
-  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#list li.st")).toHaveCount(60);
 });
 
 test("popular shortcuts reset other filters without changing audio", async ({ page }) => {
@@ -199,15 +199,15 @@ test("popular shortcuts reset other filters without changing audio", async ({ pa
   await page.locator("#btnFav").click();
   await page.locator("#filterType").selectOption("music");
   await page.locator('#chips [data-preset="granada"]').click();
-  await expect(page.locator("#list li.st")).toHaveCount(4);
+  await expect(page.locator("#list li.st")).toHaveCount(5);
   await expect(page.locator("#filterRegion")).toHaveValue("granada");
   await expect(page.locator("#btnFav")).toHaveAttribute("aria-pressed", "false");
   await expect(page.locator("#q")).toHaveValue("");
   await expect(page.locator('#chips [data-preset="granada"]')).toHaveAttribute("aria-pressed", "true");
   await page.locator('#chips [data-preset="news"]').click();
-  await expect(page.locator("#list li.st")).toHaveCount(22);
+  await expect(page.locator("#list li.st")).toHaveCount(33);
   await page.locator('#chips [data-preset="all"]').click();
-  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#list li.st")).toHaveCount(60);
   await expect(page.locator('#personalFavorites [data-quick-play="rockfm"]')).toBeVisible();
 });
 
@@ -225,7 +225,7 @@ test("custom stations appear in dedicated type and zone and can be deleted", asy
   await page.locator("#list .st-del").click();
   await expect(page.locator("#list li.empty")).toHaveCount(1);
   await page.locator("#clearFilters").click();
-  await expect(page.locator("#list li.st")).toHaveCount(41);
+  await expect(page.locator("#list li.st")).toHaveCount(60);
 });
 
 test("view all favorites clears category filters but preserves favorites", async ({ page }) => {
@@ -240,4 +240,53 @@ test("view all favorites clears category filters but preserves favorites", async
   await expect(page.locator("#filterType")).toHaveValue("all");
   await expect(page.locator("#q")).toHaveValue("");
   await expect(page.locator("#btnFav")).toHaveAttribute("aria-pressed", "true");
+});
+
+
+test("expanded 19 stations appear with individual search results", async ({ page }) => {
+  for (const id of ["radiomarca", "capitalradio", "radiointereconomia",
+    "los40urban", "los40dance", "radiomaria", "rac105", "flaixfm",
+    "flaixbac", "radioteletaxi", "apunt", "ondaregional",
+    "ondaregionalmusica", "ondavasca", "flamencoradio",
+    "copegranada", "ondacadiz", "esradiocyl", "radio7"]) {
+    await expect(page.locator('#list [data-id="' + id + '"]')).toHaveCount(1);
+  }
+  await page.locator("#q").fill("economia");
+  await expect(page.locator("#list [data-id='capitalradio']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='radiointereconomia']")).toHaveCount(1);
+  await page.locator("#q").fill("flamenco");
+  await expect(page.locator("#list [data-id='flamencoradio']")).toHaveCount(1);
+});
+
+test("new autonomous communities and COPE Granada filter correctly", async ({ page }) => {
+  await page.locator("#filterRegion").selectOption("Comunidad Valenciana");
+  await expect(page.locator("#list [data-id='apunt']")).toHaveCount(1);
+  await page.locator("#filterRegion").selectOption("Murcia");
+  await expect(page.locator("#list li.st")).toHaveCount(2);
+  await page.locator("#filterType").selectOption("music");
+  await expect(page.locator("#list [data-id='ondaregionalmusica']")).toHaveCount(1);
+  await expect(page.locator("#list [data-id='ondaregional']")).toHaveCount(0);
+  await page.locator("#filterRegion").selectOption("Castilla y León");
+  await expect(page.locator("#list li.empty")).toHaveCount(1);
+  await page.locator("#filterType").selectOption("news");
+  await expect(page.locator("#list [data-id='esradiocyl']")).toHaveCount(1);
+  await page.locator("#filterRegion").selectOption("granada");
+  await expect(page.locator("#list [data-id='copegranada']")).toHaveCount(1);
+  await page.locator("#filterType").selectOption("all");
+  await expect(page.locator("#list li.st")).toHaveCount(5);
+});
+
+test("new MP3 stations use existing player and recent/favorite panels", async ({ page }) => {
+  await page.locator("#q").fill("Radio Marca");
+  await page.locator("#list [data-id='radiomarca'] .st-fav").click();
+  await page.locator("#list [data-id='radiomarca'] .st-main").click();
+  await expect(page.locator("#nowName")).toHaveText("Radio Marca");
+  await expect(page.locator("#nowState")).toHaveText("En directo");
+  await expect(page.locator('#personalFavorites [data-quick-play="radiomarca"]')).toBeVisible();
+  await expect(page.locator('#personalRecents [data-quick-play="radiomarca"]')).toBeVisible();
+  await page.locator("#q").fill("LOS40 Dance");
+  await page.locator("#list [data-id='los40dance'] .st-main").click();
+  await expect(page.locator("#nowName")).toHaveText("LOS40 Dance");
+  await expect(page.locator("#nowState")).toHaveText("En directo");
+  await expect(page.locator('#personalRecents [data-quick-play="los40dance"]')).toBeVisible();
 });
