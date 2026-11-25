@@ -104,8 +104,41 @@
       <button type="button" class="btn" id="btnFav" aria-pressed="false">Favoritas</button>
       <button type="button" class="btn" id="btnAdd">Añadir</button>
     </div>
-    <div class="chips" id="chips" role="group" aria-label="Filtrar por tipo"></div>
-    <ul class="list" id="list"></ul>
+    <section class="filter-panel" aria-labelledby="filterTitle">
+      <div class="filter-heading">
+        <h2 id="filterTitle">Explorar emisoras</h2>
+        <p>Combina los filtros para encontrar lo que buscas.</p>
+      </div>
+      <div class="filter-grid">
+        <div class="filter-field">
+          <label for="filterType">Contenido</label>
+          <select id="filterType" class="filter-select">
+            <option value="all">Todo el contenido</option>
+            <option value="music">Música</option>
+            <option value="news">Noticias y programas</option>
+            <option value="custom">Mis emisoras</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filterGenre">Género</label>
+          <select id="filterGenre" class="filter-select">
+            <option value="all">Todos los géneros</option>
+          </select>
+        </div>
+        <div class="filter-field">
+          <label for="filterRegion">Zona</label>
+          <select id="filterRegion" class="filter-select">
+            <option value="all">Todas las zonas</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-shortcuts" id="chips" role="group" aria-label="Accesos rápidos al catálogo"></div>
+      <div class="filter-footer">
+        <p id="filterCount" class="filter-count" role="status" aria-live="polite">41 emisoras disponibles</p>
+        <button type="button" class="filter-reset" id="clearFilters" hidden>Limpiar filtros</button>
+      </div>
+    </section>
+    <ul class="list" id="list" aria-label="Emisoras encontradas"></ul>
     <p class="note">
       Las imágenes identificativas de las emisoras se solicitan a proveedores externos al mostrarse.
       Las marcas pertenecen a sus titulares. OndaLibre no aloja ni retransmite audio
@@ -131,6 +164,8 @@
     </p>
     <p>
       Puedes marcar favoritas y añadir tus propias emisoras pegando la dirección de su emisión.
+      Puedes buscar y combinar filtros de contenido, género y zona, o usar los accesos
+      rápidos del catálogo para mostrar música, noticias o radios locales de Granada.
       La sección «Para ti» coloca tus favoritas y tus últimas escuchas sobre el catálogo, con
       accesos rápidos. Todo eso se guarda únicamente en tu navegador. También puedes iniciar sesión con Google opcionalmente
       para mostrar tu perfil en esta página y consultar tus radios y géneros más escuchados
