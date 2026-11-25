@@ -114,6 +114,7 @@ Any static host works; GitHub Pages is described above.
 ## Features
 
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
+- Automatic radio reconnection after network/stream failures: bounded exponential-style backoff, offline/online handling and buffering watchdog
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
 - Responsive **Ahora suena** panel in the lower bar: live songs where supported, or generic music/news/programming labels
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
@@ -208,6 +209,28 @@ stream passes through a signed redirect, so OndaLibre uses ordinary browser audi
 (no CORS). Its streaming provider could send or set third-party cookies. No cookies are set by
 OndaLibre itself.
 [Radio Browser](https://www.radio-browser.info/) is a public-domain database for finding stream URLs.
+
+## Automatic reconnection
+
+If an active radio encounters a network/media error, a fatal hls.js failure, an unexpected end
+of the stream, or continuous buffering for **15 seconds**, OndaLibre attempts a fresh connection.
+Reconnect delays increase through **2, 5, 10, 20 and 30 seconds** (maximum five retries).
+The initial connection also has a **20-second timeout**. If the station still fails, the
+player shows **Sin señal. Pulsa Reproducir.** and stops automatically retrying.
+A healthy session that plays uninterrupted for at least 60 seconds resets the retry budget.
+
+When the browser reports that the device is **offline**, the player waits without network
+polling and retries immediately on the browser's **online** event. It does not restart an
+explicitly stopped station, a station paused from system/headset controls, or a station replaced
+by another. Autoplay permission errors require a fresh manual Play gesture instead of
+automatic attempts. The existing MP3/AAC-to-HLS and custom CORS fallbacks remain in place.
+
+**Browser limitation:** hidden-tab timers can be throttled or suspended on Android/iOS;
+reconnection cannot execute while the browser process is suspended or terminated. This
+feature does not guarantee background audio in Brave or another mobile browser.
+
+The dependency-free regression suite can be run with `node tests/reconnect.test.cjs`
+and covers backoff, HLS failures, buffering, network events, manual stop/pause and source switching.
 
 ## Now-playing information
 
