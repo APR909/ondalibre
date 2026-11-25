@@ -395,7 +395,9 @@
   // Retries are bounded: never hammer a broadcaster, and never restart after
   // an explicit Stop, a system Pause, or a station switch.
   const RETRY_DELAYS_MS = [2000, 5000, 10000, 20000, 30000];
-  const BUFFER_TIMEOUT_MS = 15000;
+  // Give slow mobile connections time to refill before replacing the stream.
+  const BUFFER_TIMEOUT_MS = 30000;
+  const CONNECTION_TIMEOUT_MS = 30000;
   const STABLE_PLAY_MS = 60000;
   let retryCount = 0;
   let retryTimer = 0;
@@ -403,11 +405,14 @@
   let wantsPlayback = false;
   let lastPlayingAt = 0;
   let internalPause = false;
+  let continuousFallbackFailed = false;
+  let bufferStartPosition = null;
 
   function clearPlaybackTimers() {
     clearTimeout(timer); timer = 0;
     clearTimeout(retryTimer); retryTimer = 0;
     clearTimeout(stallTimer); stallTimer = 0;
+    bufferStartPosition = null;
   }
 
   // Listening statistics use media playback events, not button presses.
@@ -438,7 +443,9 @@
     $("#playIco").setAttribute("href", busy ? "#i-stop" : "#i-play");
     $("#play").setAttribute("aria-label", busy ? "Detener" : "Reproducir");
     if ("mediaSession" in navigator) {
-      navigator.mediaSession.playbackState = next === "live" && !audio.paused ? "playing" : "paused";
+      // A transient buffer should not falsely tell Android that the user paused.
+      navigator.mediaSession.playbackState = ["live", "buffering"].includes(next) && !audio.paused
+        ? "playing" : "paused";
     }
     syncList();
     syncPersonal();
@@ -502,8 +509,15 @@
   }
 
   /* anonymous = CORS mode without credentials. Kiss FM uses ordinary media mode. */
-  function connect(station, anonymous = station.cors !== "no-cors", allowContinuous = true, recovering = false) {
-    if (!recovering) { retryCount = 0; lastPlayingAt = 0; }
+  // Native <audio> should use the browser's default media mode. Requiring
+  // crossorigin="anonymous" rejects streams without CORS response headers.
+  // hls.js fetches its manifests/segments separately and still requires CORS.
+  function connect(station, anonymous = station.cors === "anonymous", allowContinuous = true, recovering = false) {
+    if (!recovering) {
+      retryCount = 0;
+      lastPlayingAt = 0;
+      continuousFallbackFailed = false;
+    }
     wantsPlayback = true;
     state = "connecting"; // do not misinterpret teardown as a user pause
     teardown();
@@ -519,7 +533,7 @@
     // Prefer a continuous MP3/AAC alternative when native HLS is unavailable.
     const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
     const originalHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
-    const useContinuous = allowContinuous && originalHls && !nativeHls
+    const useContinuous = allowContinuous && !continuousFallbackFailed && originalHls && !nativeHls
       && typeof station.backgroundUrl === "string" && isHttpUrl(station.backgroundUrl)
       && !/\.m3u8(\?|$)/i.test(station.backgroundUrl);
     const streamUrl = useContinuous ? station.backgroundUrl : station.url;
@@ -528,7 +542,12 @@
     const fail = () => {
       if (me !== attempt || !wantsPlayback || state === "paused") return;
       // Try the broadcaster's original format before consuming a retry.
-      if (useContinuous) { connect(station, anonymous, false, true); return; }
+      if (useContinuous) {
+        // A broken MP3/AAC alternative must not be retried before every HLS attempt.
+        continuousFallbackFailed = true;
+        connect(station, anonymous, false, true);
+        return;
+      }
       // User-added streams may lack CORS; preserve their existing fallback.
       if (anonymous && isCustom(station) && !isHls) { connect(station, false, false, true); return; }
       scheduleRetry();
@@ -565,7 +584,12 @@
     }
 
     audio.onerror = fail;
-    timer = setTimeout(fail, 20000);
+    timer = setTimeout(() => {
+      timer = 0;
+      if (me !== attempt || !wantsPlayback || state !== "connecting") return;
+      if (document.hidden) return; // Android may suspend JavaScript in background
+      fail();
+    }, CONNECTION_TIMEOUT_MS);
     if (isHls && !nativeHls && window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls();
       hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data && data.fatal) fail(); });
@@ -582,6 +606,7 @@
     wantsPlayback = false;
     retryCount = 0;
     lastPlayingAt = 0;
+    continuousFallbackFailed = false;
     teardown();
     setState("idle");
   }
@@ -613,8 +638,9 @@
     clearPlaybackTimers();
     setState("connecting", "Reanudando…");
     timer = setTimeout(() => {
-      if (me === attempt && wantsPlayback && state === "connecting") scheduleRetry();
-    }, 20000);
+      timer = 0;
+      if (me === attempt && wantsPlayback && state === "connecting" && !document.hidden) scheduleRetry();
+    }, CONNECTION_TIMEOUT_MS);
     audio.play().catch((err) => {
       if (me !== attempt || !wantsPlayback || (err && err.name === "AbortError")) return;
       if (err && err.name === "NotAllowedError") {
@@ -640,15 +666,33 @@
     connect(list[(i + dir + list.length) % list.length]);
   }
 
-  function bufferWatchdog() {
+  function mediaPosition() {
+    return Number.isFinite(audio.currentTime) && audio.currentTime >= 0
+      ? audio.currentTime : null;
+  }
+
+  function bufferWatchdog(event) {
     if (!wantsPlayback || !["live", "buffering"].includes(state)) return;
+    // "stalled" means the network fetch paused; buffered sound may still play.
+    if (event && event.type === "stalled" && !audio.paused && audio.readyState >= 3) return;
     // Repeated "waiting" events must not postpone an existing deadline.
     if (state === "buffering" && stallTimer) return;
+    bufferStartPosition = mediaPosition();
     setState("buffering", "Cargando…");
     clearTimeout(stallTimer);
     stallTimer = setTimeout(() => {
       stallTimer = 0;
-      if (wantsPlayback && state === "buffering") scheduleRetry();
+      if (!wantsPlayback || state !== "buffering") return;
+      const position = mediaPosition();
+      if (position !== null && bufferStartPosition !== null
+        && position - bufferStartPosition > 0.5) {
+        setState("live"); // media is advancing despite a transient waiting event
+        return;
+      }
+      // Never tear down a potentially healthy audio session merely because
+      // background timers were delayed by Brave/Android.
+      if (document.hidden) return;
+      scheduleRetry();
     }, BUFFER_TIMEOUT_MS);
   }
 
@@ -656,12 +700,23 @@
     if (!wantsPlayback || audio.paused) return;
     clearTimeout(timer); timer = 0;
     clearTimeout(stallTimer); stallTimer = 0;
-    lastPlayingAt = Date.now();
+    // Keep the original start time across brief buffering periods so a
+    // long healthy session can reset the retry budget.
+    if (!lastPlayingAt || state !== "buffering") lastPlayingAt = Date.now();
     rememberRecent(current);
     setState("live");
   });
   audio.addEventListener("waiting", bufferWatchdog);
   audio.addEventListener("stalled", bufferWatchdog);
+  audio.addEventListener("timeupdate", () => {
+    if (state !== "buffering" || audio.paused) return;
+    const position = mediaPosition();
+    if (position !== null && bufferStartPosition !== null
+      && position - bufferStartPosition > 0.5) {
+      clearTimeout(stallTimer); stallTimer = 0;
+      setState("live");
+    }
+  });
   audio.addEventListener("ended", () => {
     if (wantsPlayback && ["live", "buffering"].includes(state)) scheduleRetry();
   });
@@ -678,8 +733,19 @@
     if (state === "retrying") {
       clearTimeout(retryTimer); retryTimer = 0;
       setState("retrying", "Sin Internet · esperando conexión");
-    } else if (["live", "buffering", "connecting"].includes(state)) {
-      scheduleRetry();
+    }
+    // navigator.onLine is only a connectivity hint, not proof that a media
+    // connection failed. Keep any playing stream alive until it actually errors.
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || !wantsPlayback || !current) return;
+    if (state === "buffering" && !stallTimer) bufferWatchdog();
+    else if (state === "connecting" && !timer) {
+      const me = attempt;
+      timer = setTimeout(() => {
+        timer = 0;
+        if (wantsPlayback && me === attempt && state === "connecting") scheduleRetry();
+      }, CONNECTION_TIMEOUT_MS);
     }
   });
   window.addEventListener("online", () => {
