@@ -65,7 +65,11 @@ About view needs a real contact so takedown requests can reach you; it currently
 
 ### 2.6 Cookies and local storage — review the Kiss FM exception
 `localStorage` holds device preferences (theme, volume, favourites, own stations and last
-station). For signed-in users, it additionally stores per-account listening history under a
+station) and now a bounded list of up to eight recently played station IDs for «Para ti».
+Recent history is written only when audio starts playing and can be cleared from the
+home screen. It is browser-local, does not require a Google account and is not sent to a
+remote service. For signed-in users, it additionally stores separate per-account
+listening statistics under a
 SHA-256-derived pseudonymous key, with radio names, primary genres and approximate playback
 seconds. Google tokens, names, emails and raw account subject identifiers are not persisted with
 the history. History stays on the device and is deleted on explicit request or when browser data
