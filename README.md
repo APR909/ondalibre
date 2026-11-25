@@ -116,7 +116,7 @@ Any static host works; GitHub Pages is described above.
 - Plays MP3/AAC streams natively and HLS (`.m3u8`) through hls.js
 - Automatic radio reconnection after network/stream failures: bounded exponential-style backoff, offline/online handling and buffering watchdog
 - Four small animated bars in the bottom player while a radio is actually playing; pause, stalls and errors stop the motion
-- Responsive **Ahora suena** panel in the lower bar: live songs where supported, or generic music/news/programming labels
+- Responsive **Ahora suena** panel with station-matched, recent song/artist metadata for 12 additional music broadcasters (best-effort third-party coverage); generic fallback elsewhere
 - **Mis radios** and **Mis géneros** tabs after Google sign-in: top 10 ranked by share of actual playing time, with percentage bars, total time and clear-history control
 - Neon visual identity (variant 04) with dark, light and high-contrast themes; follows the system setting until the listener chooses
 - Search, type and regional filters (including autonomous communities), favourites, add/remove your own stream URLs (kept in `localStorage`)
@@ -241,18 +241,39 @@ available. **OndaLibre does not infer or guess song titles from the audio.** Man
 do not publish accessible track metadata; the HTML audio element does not expose ICY stream
 titles across origins.
 
-A public AzuraCast now-playing endpoint is configured for Gozadera FM as a best-effort
-example in `stations.js`. While that station is playing, `now-playing.js` attempts to
-retrieve the currently reported artist and title at intervals, matching the station name
-in the returned data. Requests use CORS, omit credentials and referrer, and stop when playback
-stops or another station is selected. **The endpoint's availability and browser CORS
-headers have not been verified end-to-end.** If requests fail, are blocked or return no
-credible track information, the interface automatically falls back to the generic description.
+**Expanded coverage:** `stations.js` now opts in 12 major Spanish music networks:
+LOS40, LOS40 Classic, Cadena Dial, Cadena 100, Rock FM, Kiss FM, Europa FM, Melodía FM,
+MegaStar FM, Radiolé, Radio 3 and Canal Fiesta Radio. The integration uses the
+[public Tuneping API](https://tuneping.com/es/docs/) in best-effort mode, without an API key.
+It searches the station directory by official name and country `ES`, verifies the
+broadcaster identity (requiring an exact alias, unique candidate, matching stream, or unique
+official homepage) and only then requests the live title for that station's UUID.
+It **rejects ambiguous relays**. Song data must be marked `classification: song`,
+have non-low confidence, and have a confirmation timestamp no more than 3 minutes old.
+The page polls at most every 60 seconds while the selected station is playing and visible;
+a provider/network failure backs off to 3 minutes. Station resolution is cached in memory
+for the current tab. No credentials, profiles or listening statistics are transmitted.
+Not every station in Tuneping necessarily publishes song titles: the available coverage
+depends entirely on station metadata. **Live API and CORS compatibility must still be
+verified in Android/desktop browsers**; OndaLibre never bypasses a CORS restriction.
 
-The metadata provider receives the visitor's IP and technical connection information
-when its API is contacted, but not OndaLibre's Google account, favourites or statistics.
-Do not add metadata endpoints for stations without validating their ownership, CORS,
-response format and privacy impact.
+Gozadera FM retains its separate public AzuraCast now-playing source, with strict
+station-name matching. Its live endpoint and CORS availability also require browser
+verification. If no credible metadata is available, the player shows the appropriate
+generic programme/music description. Buffering, reconnection, pauses, stopping and station
+switches cancel or suspend pending metadata updates, so stale songs cannot overwrite
+another station's programme information.
+
+**Privacy:** when these optional third-party feeds are requested, their providers may
+receive the listener's IP address and technical request metadata. OndaLibre omits
+credentials and referrer, does not transmit account details or local listening history,
+and stops querying in hidden tabs. Consult the About page for privacy disclosure.
+Tuneping is a third-party public beta service; the API may rate-limit, change or be
+unavailable. The interface remains fully functional without it.
+
+The regression suite `node tests/now-playing.test.cjs` verifies station identity,
+staleness checks, correct song attribution, Gozadera compatibility, cancellation and
+failure handling; `node tests/reconnect.test.cjs` checks the core player.
 
 ## Station logos and volume display
 
