@@ -129,6 +129,37 @@ Any static host works; GitHub Pages is described above.
 - Keyboard: `Space` play/stop, `←` / `→` previous / next; OS media keys via Media Session
 - The About view keeps the audio playing and is readable with JavaScript disabled
 
+## Automated quality checks
+
+OndaLibre runs automated tests on every push to `main`, pull request and manual GitHub
+Actions dispatch. Two independent CI jobs ensure a failing unit test cannot be hidden by
+an unrelated browser result:
+
+- **Node.js, zero runtime dependencies:** project integrity (PWA icons and actual PNG
+  dimensions, asset/script links, HTML IDs, accessibility label references, 41 unique
+  station entries, HTTPS stream/logo URLs and safe script order); radio reconnection,
+  favorites/recent stations, musical metadata, optional Google sign-in UI and private
+  listening statistics. Run `npm test` with Node.js 22 or newer; **no npm install is
+  required** for these core tests.
+- **Playwright Chromium:** real-browser smoke tests on desktop (1280 × 900) and an
+  Android-sized touch viewport (390 × 844). They cover rendering, search, quick
+  playback, favorites, recently played stations, local persistence, volume, themes,
+  navigation and unexpected JavaScript exceptions. Run locally with
+  `npm install`, `npx playwright install chromium` and `npm run test:browser`.
+  Browser automation dependencies are **development-only**; the website itself
+  remains static and requires neither npm nor a backend.
+
+The browser tests simulate the HTML audio element and block third-party requests, so
+results do not depend on broadcasters being online, metadata providers or Google
+accounts. **They do not verify live radio audio, CORS, Brave/Android background
+playback, network conditions or authentication against Google's servers.** Those
+still require device/manual integration tests. The CI workflow uploads Playwright
+screenshots and traces when a browser test fails.
+
+See [GitHub Actions](https://github.com/APR909/ondalibre/actions) and
+`.github/workflows/reconnect-tests.yml`. Test suites are under `tests/`, and
+`playwright.config.cjs` configures the two Chromium viewports.
+
 ## Personalized home: «Para ti»
 
 The top of the Emisoras page now has two compact panels:
