@@ -150,7 +150,9 @@
     "Asturias": "Asturias", "Baleares": "Islas Baleares",
     "Canarias": "Canarias", "Castilla-La Mancha": "Castilla-La Mancha",
     "Cataluña": "Cataluña", "Extremadura": "Extremadura",
-    "Galicia": "Galicia", "País Vasco": "País Vasco"
+    "Galicia": "Galicia", "País Vasco": "País Vasco",
+    "Comunidad Valenciana": "Comunidad Valenciana",
+    "Murcia": "Región de Murcia", "Castilla y León": "Castilla y León"
   };
   const QUICK_FILTERS = [
     { id: "all", title: "Todas" }, { id: "music", title: "Música" },
@@ -165,7 +167,10 @@
 
   function stationType(station) {
     if (isCustom(station)) return "custom";
-    return station.genre === "Noticias" ? "news" : "music";
+    // Sports, economics and spoken programming belong to Noticias y programas,
+    // not Música. The independent genre selector still shows their exact genre.
+    return ["Noticias", "Deportes", "Economía", "Programas"].includes(station.genre)
+      ? "news" : "music";
   }
 
   function stationRegion(station) {
