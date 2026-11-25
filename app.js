@@ -17,7 +17,7 @@
   } catch { /* Audio Session API is experimental and optional */ }
 
   /* ---------- storage (fails soft when unavailable) ---------- */
-  const KEY = { favs: "ondalibre.favs", custom: "ondalibre.custom", vol: "ondalibre.vol", last: "ondalibre.last", theme: "ondalibre.theme" };
+  const KEY = { favs: "ondalibre.favs", custom: "ondalibre.custom", vol: "ondalibre.vol", last: "ondalibre.last", theme: "ondalibre.theme", recents: "ondalibre.recents.v1" };
   const load = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fallback; } catch { return fallback; } };
   const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } };
 
@@ -34,6 +34,12 @@
       desc: typeof s.desc === "string" ? s.desc : "Añadida por ti",
       genre: typeof s.genre === "string" && s.genre ? s.genre : "Personalizadas"
     }));
+  // Recent stations are browser-local and are recorded only once audio really
+  // starts playing. Saved IDs, not account names, audio, or listening history.
+  const savedRecents = load(KEY.recents, []);
+  let recents = Array.isArray(savedRecents)
+    ? [...new Set(savedRecents.filter((id) => typeof id === "string" && id.length <= 100))].slice(0, 8)
+    : [];
   let tag = "Todas";
   let onlyFavs = false;
   let query = "";
@@ -179,6 +185,74 @@
     syncList();
   }
 
+  /* ---------- personalized home ---------- */
+  const RECENT_LIMIT = 8;
+  const QUICK_LIMIT = 6;
+
+  function quickStatus(station) {
+    if (!current || current.id !== station.id) return station.genre || "Radio en directo";
+    if (state === "live") return "En directo";
+    if (state === "paused") return "En pausa";
+    if (state === "connecting") return "Conectando…";
+    if (state === "retrying") return "Reconectando…";
+    if (state === "buffering") return "Cargando…";
+    return station.genre || "Radio en directo";
+  }
+
+  function quickButton(station) {
+    const button = el("button", { type: "button", class: "personal-quick",
+      "data-quick-play": station.id, title: station.name });
+    button.append(
+      stationArtwork(station),
+      el("span", { class: "personal-quick-text" },
+        el("strong", { class: "personal-quick-name", text: station.name }),
+        el("small", { class: "personal-quick-sub", text: quickStatus(station) })),
+      el("span", { class: "personal-quick-icon" }, icon("i-play")));
+    return button;
+  }
+
+  function renderPersonal() {
+    const available = all();
+    const byId = new Map(available.map((s) => [s.id, s]));
+    const favorites = [...favs].reverse().map((id) => byId.get(id)).filter(Boolean);
+    const recentStations = recents.map((id) => byId.get(id)).filter(Boolean);
+    const makeItems = (items, message) => items.length
+      ? items.slice(0, QUICK_LIMIT).map(quickButton)
+      : [el("p", { class: "personal-empty", text: message })];
+    $("#personalFavorites").replaceChildren(...makeItems(favorites,
+      "Marca una emisora con la estrella para acceder a ella directamente."));
+    $("#personalRecents").replaceChildren(...makeItems(recentStations,
+      "Las radios que escuches aparecerán aquí."));
+    $("#personalShowFavorites").hidden = favorites.length === 0;
+    $("#personalClearRecents").hidden = recents.length === 0;
+    syncPersonal();
+  }
+
+  // Update the existing quick-access buttons instead of recreating them on
+  // playback state changes, keeping keyboard focus and touch targets stable.
+  function syncPersonal() {
+    document.querySelectorAll("#personalHome [data-quick-play]").forEach((button) => {
+      const station = all().find((s) => s.id === button.dataset.quickPlay);
+      if (!station) return;
+      const isCurrent = !!current && current.id === station.id;
+      const busy = isCurrent && ["live", "connecting", "buffering", "retrying"].includes(state);
+      button.setAttribute("data-active", String(isCurrent));
+      button.setAttribute("aria-label", (busy ? "Detener " : "Reproducir ") + station.name);
+      button.querySelector(".personal-quick-icon use").setAttribute("href",
+        busy ? "#i-stop" : "#i-play");
+      button.querySelector(".personal-quick-sub").textContent = quickStatus(station);
+    });
+  }
+
+  function rememberRecent(station) {
+    if (!station || !all().some((s) => s.id === station.id)) return;
+    if (recents[0] === station.id) return;
+    recents = [station.id, ...recents.filter((id) => id !== station.id)]
+      .slice(0, RECENT_LIMIT);
+    save(KEY.recents, recents);
+    renderPersonal();
+  }
+
   /* Updates rows in place so keyboard focus is never lost. */
   function syncList() {
     document.querySelectorAll("#list .st").forEach((li) => {
@@ -245,6 +319,7 @@
       navigator.mediaSession.playbackState = next === "live" && !audio.paused ? "playing" : "paused";
     }
     syncList();
+    syncPersonal();
     publishPlayback();
   }
 
@@ -460,6 +535,7 @@
     clearTimeout(timer); timer = 0;
     clearTimeout(stallTimer); stallTimer = 0;
     lastPlayingAt = Date.now();
+    rememberRecent(current);
     setState("live");
   });
   audio.addEventListener("waiting", bufferWatchdog);
@@ -512,6 +588,7 @@
       save(KEY.favs, [...favs]);
       if (onlyFavs) renderList();
       else e.target.closest(".st-fav").setAttribute("aria-pressed", String(favs.has(s.id)));
+      renderPersonal();
     } else if (e.target.closest(".st-del")) {
       if (current && current.id === s.id) {
         stop(); current = null; $("#play").disabled = true;
@@ -520,8 +597,9 @@
       }
       custom = custom.filter((x) => x.id !== s.id);
       favs.delete(s.id);
-      save(KEY.custom, custom); save(KEY.favs, [...favs]);
-      renderChips(); renderList();
+      recents = recents.filter((id) => id !== s.id);
+      save(KEY.custom, custom); save(KEY.favs, [...favs]); save(KEY.recents, recents);
+      renderChips(); renderList(); renderPersonal();
     } else if (e.target.closest(".st-main")) {
       if (current && current.id === s.id) toggle(); else connect(s);
     }
@@ -539,6 +617,33 @@
     onlyFavs = !onlyFavs;
     e.currentTarget.setAttribute("aria-pressed", String(onlyFavs));
     renderList();
+  });
+
+  // Quick-access cards bypass the main catalogue filters but share the same
+  // connect/stop lifecycle, source fallbacks and playback events.
+  $("#personalHome").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-quick-play]");
+    if (!button) return;
+    const station = all().find((s) => s.id === button.dataset.quickPlay);
+    if (!station) { renderPersonal(); return; }
+    if (current && current.id === station.id) toggle();
+    else connect(station);
+  });
+  $("#personalShowFavorites").addEventListener("click", () => {
+    onlyFavs = true;
+    tag = "Todas";
+    query = "";
+    $("#q").value = "";
+    $("#btnFav").setAttribute("aria-pressed", "true");
+    renderChips();
+    renderList();
+    $("#list").scrollIntoView?.({ block: "start",
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  });
+  $("#personalClearRecents").addEventListener("click", () => {
+    recents = [];
+    try { localStorage.removeItem(KEY.recents); } catch { /* private mode / disabled storage */ }
+    renderPersonal();
   });
 
   $("#play").addEventListener("click", toggle);
@@ -605,4 +710,5 @@
   renderList();
   const last = all().find((s) => s.id === load(KEY.last, null));
   if (last) { select(last); syncList(); }
+  renderPersonal();
 })();
