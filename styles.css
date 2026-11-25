@@ -615,3 +615,81 @@ dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20
 @media (prefers-reduced-motion: reduce) {
   .personal-quick { transition: none; }
 }
+
+/* ---------- grouped station discovery ---------- */
+.filter-panel {
+  padding: 17px 18px 13px;
+  margin: 0 0 16px;
+  background: var(--surface);
+  border: var(--bw) solid var(--line);
+  border-radius: 12px;
+}
+.filter-heading {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 4px 12px; margin-bottom: 15px;
+}
+.filter-heading h2 {
+  margin: 0; font-size: 1rem; font-weight: 750;
+  letter-spacing: -.01em;
+}
+.filter-heading p {
+  color: var(--muted); font-size: .76rem; margin: 0;
+}
+.filter-grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.filter-field label {
+  color: var(--muted); font-size: .75rem; font-weight: 650;
+}
+.filter-select {
+  appearance: auto; width: 100%; min-width: 0; min-height: 43px;
+  border: var(--bw) solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  padding: 9px 7px; font: inherit; font-size: .78rem;
+}
+.filter-select:focus-visible, .filter-shortcuts button:focus-visible,
+.filter-reset:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px;
+}
+.filter-shortcuts {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 7px; padding-top: 14px;
+}
+.filter-shortcuts button {
+  flex: none; background: var(--bg); color: var(--muted);
+  border: var(--bw) solid var(--line); border-radius: 999px;
+  padding: 7px 13px; min-height: 37px; line-height: 1.25;
+  font-size: .78rem; font-weight: 650;
+  transition: border-color .15s ease, background .15s ease;
+}
+.filter-shortcuts button[aria-pressed="true"] {
+  color: var(--text); border-color: var(--accent);
+  background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent);
+}
+.filter-shortcuts button:hover { border-color: var(--accent-2); }
+.filter-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 14px; margin-top: 13px;
+  border-top: var(--bw) solid var(--line); padding-top: 10px;
+}
+.filter-count { color: var(--muted); margin: 0; font-size: .77rem; }
+.filter-reset {
+  color: var(--accent); font-size: .77rem;
+  font-weight: 700; text-decoration: underline; text-underline-offset: 3px;
+  padding: 4px 0; min-height: 31px;
+}
+.filter-reset:hover { color: var(--accent-2); }
+.filter-reset[hidden] { display: none; }
+@media (max-width: 600px) {
+  .filter-panel { padding: 13px; margin-bottom: 12px; }
+  .filter-heading { margin-bottom: 12px; }
+  .filter-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .filter-select { min-height: 44px; font-size: .88rem; padding: 9px 11px; }
+  .filter-shortcuts { gap: 7px; padding-top: 12px; }
+  .filter-shortcuts button { min-height: 40px; padding: 8px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filter-shortcuts button { transition: none; }
+}
