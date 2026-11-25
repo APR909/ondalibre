@@ -27,3 +27,5 @@ jobs:
         run: node tests/reconnect.test.cjs
       - name: Now-playing metadata regression tests
         run: node tests/now-playing.test.cjs
+      - name: Personalized home regression tests
+        run: node tests/personal-home.test.cjs
