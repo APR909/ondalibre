@@ -1,0 +1,14 @@
+{
+  "name": "ondalibre-quality-checks",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Developer-only automated tests for OndaLibre (the site remains static).",
+  "scripts": {
+    "test": "node tests/project-integrity.test.cjs && node tests/reconnect.test.cjs && node tests/now-playing.test.cjs && node tests/personal-home.test.cjs && node tests/stats.test.cjs && node tests/auth.test.cjs",
+    "test:browser": "playwright test",
+    "test:all": "npm test && npm run test:browser"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}
