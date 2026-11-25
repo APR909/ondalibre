@@ -8,13 +8,14 @@ async function runReconnectTests(code) {
   const assert = (ok, reason) => { if (!ok) throw Error(reason); };
   function browser(opts = {}) {
     let now = 1000000, nextId = 0, plays = 0, srcSets = 0;
-    const timers = new Map(), elements = {}, listeners = {}, hlsInstances = [], signals = [];
+    const timers = new Map(), elements = {}, listeners = {}, documentListeners = {}, hlsInstances = [], signals = [];
     class Element {
       constructor(tag) {
         this.tag = tag; this.dataset = {}; this.attrs = {}; this.children = [];
         this.listeners = {}; this.style = {}; this.classList = { toggle() {} };
         this.paused = true; this.volume = .8; this.muted = false;
         this.value = "80"; this._src = ""; this.currentSrc = "";
+        this.currentTime = 0; this.readyState = 0;
       }
       set src(v) { this._src = v; this.currentSrc = v; this.attrs.src = v; srcSets++; }
       get src() { return this._src; }
@@ -31,8 +32,9 @@ async function runReconnectTests(code) {
       }
       addEventListener(k, fn) { (this.listeners[k] ||= []).push(fn); }
       emit(k, data) {
-        for (const fn of this.listeners[k] || []) fn(data);
-        if (k === "error") this.onerror?.(data);
+        const event = { type: k, ...(data || {}) };
+        for (const fn of this.listeners[k] || []) fn(event);
+        if (k === "error") this.onerror?.(event);
       }
       append(...xs) { this.children.push(...xs); }
       replaceChildren(...xs) { this.children = xs; }
@@ -81,7 +83,8 @@ async function runReconnectTests(code) {
       querySelectorAll: s => s === "#list .st" ? $("#list").children : [],
       createElement: name => new Element(name),
       createElementNS: (_ns, name) => new Element(name),
-      addEventListener() {},
+      hidden: false,
+      addEventListener(name, fn) { (documentListeners[name] ||= []).push(fn); },
       dispatchEvent: ev => signals.push(ev)
     };
     const mediaSession = { actions: {}, playbackState: "none",
@@ -144,6 +147,10 @@ async function runReconnectTests(code) {
       timers: () => timers.size, hls: () => hlsInstances.at(-1),
       hlsCount: () => hlsInstances.length,
       playButton: () => $("#play").emit("click"),
+      visibility(hidden) {
+        document.hidden = hidden;
+        for (const fn of documentListeners.visibilitychange || []) fn();
+      },
       network(online) {
         navigator.onLine = online;
         for (const cb of listeners[online ? "online" : "offline"] || []) cb();
@@ -183,11 +190,17 @@ async function runReconnectTests(code) {
     assert(h.kind() === "error" && !h.timers(), "Retry cap ignored");
     h.playButton(); assert(h.kind() === "connecting", "Manual restart failed");
   });
-  await check("Offline waits; reconnects on online event", () => {
-    const h = browser(); h.choose("a"); h.audio.emit("playing"); h.network(false);
-    assert(h.kind() === "retrying" && h.timers() === 0, "Offline loop detected");
+  await check("Offline event does not kill playing audio; real error waits for online", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    const current = h.audio.currentSrc, started = h.plays();
+    h.network(false);
+    assert(h.kind() === "live" && h.audio.currentSrc === current, "Offline event killed working stream");
+    assert(h.plays() === started, "Offline event restarted audio");
+    h.audio.emit("error");
+    assert(h.kind() === "retrying" && h.timers() === 0, "Real offline failure should wait");
     h.tick(90000); h.network(true);
     assert(h.kind() === "connecting", "No immediate online recovery");
+    assert(h.audio.crossOrigin === "", "Online recovery enforced CORS");
     h.audio.emit("playing"); assert(h.kind() === "live", "Recovery failed");
   });
   await check("Stop and station switch cancel stale retry timers", () => {
@@ -206,22 +219,80 @@ async function runReconnectTests(code) {
     h.hls().manifest(); h.audio.emit("playing");
     assert(h.kind() === "live", "HLS recovery failed");
   });
-  await check("Buffering watchdog ignores transient waits", () => {
+  await check("Buffering watchdog ignores transient waits and retries after 30s", () => {
     const h = browser(); h.choose("a"); h.audio.emit("playing");
     h.audio.emit("waiting"); assert(h.kind() === "buffering", "Buffering not reflected");
-    h.tick(14999); assert(h.kind() === "buffering", "Premature retry");
+    h.tick(29999); assert(h.kind() === "buffering", "Premature retry");
     h.audio.emit("playing"); h.tick(100);
     assert(h.kind() === "live", "Did not clear buffering");
-    h.audio.emit("stalled"); h.tick(15000);
+    h.audio.emit("stalled"); h.tick(30000);
     assert(h.kind() === "retrying", "Long stall not recovered");
   });
   await check("Repeated waiting events cannot indefinitely defer watchdog", () => {
     const h = browser(); h.choose("a"); h.audio.emit("playing");
     h.audio.emit("waiting"); h.tick(7000);
-    h.audio.emit("waiting"); h.audio.emit("stalled"); h.tick(7999);
+    h.audio.emit("waiting"); h.audio.emit("stalled"); h.tick(22999);
     assert(h.kind() === "buffering", "Watchdog fired early");
     h.tick(1);
     assert(h.kind() === "retrying", "Repeated buffering events reset the deadline");
+  });
+  await check("Native MP3 starts and retries without requiring stream CORS", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    assert(h.audio.crossOrigin === "", "Native MP3 was forced into CORS");
+    h.audio.emit("error"); h.tick(2000);
+    assert(h.kind() === "connecting" && h.audio.crossOrigin === "", "Retry reintroduced CORS");
+  });
+  await check("Temporary wait resumes on time progress without tearing down source", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    const started = h.plays(), source = h.audio.currentSrc;
+    h.audio.currentTime = 10;
+    h.audio.emit("waiting");
+    h.tick(11000);
+    h.audio.currentTime = 15;
+    h.audio.emit("timeupdate");
+    assert(h.kind() === "live" && h.audio.currentSrc === source, "Progress was treated as failure");
+    h.tick(60000);
+    assert(h.kind() === "live" && h.plays() === started, "Old buffering timer restarted stream");
+  });
+  await check("A stalled network with buffered audio does not restart the station", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    h.audio.readyState = 3;
+    const sources = h.sources();
+    h.audio.emit("stalled");
+    h.tick(80000);
+    assert(h.kind() === "live" && h.sources() === sources, "Buffered stream unnecessarily reloaded");
+  });
+  await check("Background buffering does not tear down audio on throttled timers", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    h.visibility(true);
+    h.audio.emit("waiting");
+    assert(h.mediaSession.playbackState === "playing", "Android media session was marked paused");
+    const count = h.plays();
+    h.tick(80000);
+    assert(h.kind() === "buffering" && h.plays() === count,
+      "Hidden browser was forced to reconnect");
+    h.visibility(false);
+    h.tick(30000);
+    assert(h.kind() === "retrying", "Foreground prolonged stall never retried");
+  });
+  await check("Background startup timeout waits for foreground before recovering", () => {
+    const h = browser(); h.choose("a");
+    h.visibility(true);
+    h.tick(90000);
+    assert(h.kind() === "connecting" && h.plays() === 1, "Background startup was torn down");
+    h.visibility(false);
+    h.tick(30000);
+    assert(h.kind() === "retrying", "Foreground startup hang not handled");
+  });
+  await check("HLS continuous fallback is not retried every time", () => {
+    const h = browser(); h.choose("alt");
+    h.audio.emit("error");
+    const instance = h.hls();
+    instance.fatal();
+    h.tick(2000);
+    assert(h.hlsCount() === 2, "Retry should keep original HLS instead of failed MP3");
+    h.hls().fatal(); h.tick(5000);
+    assert(h.hlsCount() === 3, "Subsequent HLS recovery failed");
   });
   await check("Headset pause never auto-restarts; Play resumes", () => {
     const h = browser(); h.choose("a"); h.audio.emit("playing");
@@ -240,19 +311,20 @@ async function runReconnectTests(code) {
     h.hls().fatal();
     assert(h.kind() === "retrying", "HLS fallback did not schedule retry");
     h.tick(2000);
-    assert(h.audio.currentSrc.endsWith("alt.mp3"), "Retry did not restore best source");
+    assert(h.hlsCount() === 2 && !h.audio.currentSrc.endsWith("alt.mp3"),
+      "Broken continuous stream should stay disabled until manual play");
   });
-  await check("Custom station CORS fallback and malformed preferences", () => {
+  await check("Custom streams start in native mode and malformed preferences do not crash", () => {
     const corrupted = browser({ corrupt: true });
     corrupted.choose("a"); corrupted.audio.emit("playing");
     assert(corrupted.kind() === "live", "Malformed preferences crashed app");
     const h = browser({ custom: [{ id: "u1", name: "User station",
       url: "https://radio.test/custom.mp3", tags: ["Mías"] }] });
-    h.choose("u1"); assert(h.audio.crossOrigin === "anonymous", "Initial CORS missing");
+    h.choose("u1"); assert(h.audio.crossOrigin === "", "Custom radio forced CORS");
     h.audio.emit("error");
-    assert(h.kind() === "connecting" && h.audio.crossOrigin === "", "CORS fallback missing");
-    h.audio.emit("error");
-    assert(h.kind() === "retrying", "Custom fallback did not retry");
+    assert(h.kind() === "retrying", "Custom station did not retry");
+    h.tick(2000);
+    assert(h.audio.crossOrigin === "", "Custom retry forced CORS");
   });
   await check("Autoplay-denied audio requires user gesture", async () => {
     const h = browser({ denyOnce: true }); h.choose("a");
