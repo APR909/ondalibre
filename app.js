@@ -206,6 +206,7 @@
   let stallTimer = 0;
   let wantsPlayback = false;
   let lastPlayingAt = 0;
+  let internalPause = false;
 
   function clearPlaybackTimers() {
     clearTimeout(timer); timer = 0;
@@ -256,7 +257,9 @@
       hls = null;
       previous.destroy();
     }
-    audio.pause();
+    // A teardown-induced pause must never cancel the pending retry.
+    internalPause = true;
+    try { audio.pause(); } finally { internalPause = false; }
     audio.removeAttribute("src");
     audio.load();
     needsGesture = false;
@@ -286,6 +289,7 @@
     }
     const delay = RETRY_DELAYS_MS[retryCount++];
     const station = current;
+    state = "retrying"; // ignore pause events caused by disposing the old stream
     teardown();
     if (navigator.onLine === false) {
       setState("retrying", "Sin Internet · esperando conexión");
@@ -304,6 +308,7 @@
   function connect(station, anonymous = station.cors !== "no-cors", allowContinuous = true, recovering = false) {
     if (!recovering) { retryCount = 0; lastPlayingAt = 0; }
     wantsPlayback = true;
+    state = "connecting"; // do not misinterpret teardown as a user pause
     teardown();
     const me = attempt;
     select(station);
@@ -461,7 +466,7 @@
     if (wantsPlayback && ["live", "buffering"].includes(state)) scheduleRetry();
   });
   audio.addEventListener("pause", () => {
-    if (state === "live" && audio.paused) {
+    if (!internalPause && state === "live" && audio.paused) {
       wantsPlayback = false;
       clearPlaybackTimers();
       setState("paused");
