@@ -215,6 +215,14 @@ async function runReconnectTests(code) {
     h.audio.emit("stalled"); h.tick(15000);
     assert(h.kind() === "retrying", "Long stall not recovered");
   });
+  await check("Repeated waiting events cannot indefinitely defer watchdog", () => {
+    const h = browser(); h.choose("a"); h.audio.emit("playing");
+    h.audio.emit("waiting"); h.tick(7000);
+    h.audio.emit("waiting"); h.audio.emit("stalled"); h.tick(7999);
+    assert(h.kind() === "buffering", "Watchdog fired early");
+    h.tick(1);
+    assert(h.kind() === "retrying", "Repeated buffering events reset the deadline");
+  });
   await check("Headset pause never auto-restarts; Play resumes", () => {
     const h = browser(); h.choose("a"); h.audio.emit("playing");
     const srcSets = h.sources(); h.mediaSession.actions.pause();
