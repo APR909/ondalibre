@@ -40,7 +40,9 @@
   let recents = Array.isArray(savedRecents)
     ? [...new Set(savedRecents.filter((id) => typeof id === "string" && id.length <= 100))].slice(0, 8)
     : [];
-  let tag = "Todas";
+  let contentFilter = "all";
+  let genreFilter = "all";
+  let regionFilter = "all";
   let onlyFavs = false;
   let query = "";
   let current = null;        // selected station
@@ -142,21 +144,134 @@
   }
   window.addEventListener("hashchange", route);
 
-  /* ---------- list ---------- */
+  /* ---------- grouped catalogue filters ---------- */
+  const REGION_LABELS = {
+    "Andalucía": "Andalucía", "Aragón": "Aragón",
+    "Asturias": "Asturias", "Baleares": "Islas Baleares",
+    "Canarias": "Canarias", "Castilla-La Mancha": "Castilla-La Mancha",
+    "Cataluña": "Cataluña", "Extremadura": "Extremadura",
+    "Galicia": "Galicia", "País Vasco": "País Vasco"
+  };
+  const QUICK_FILTERS = [
+    { id: "all", title: "Todas" }, { id: "music", title: "Música" },
+    { id: "news", title: "Noticias" }, { id: "granada", title: "Granada" }
+  ];
+
+  // Accents are ignored for search only; visible station names are unchanged.
+  function normalizeSearch(value) {
+    return String(value || "").normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es").trim();
+  }
+
+  function stationType(station) {
+    if (isCustom(station)) return "custom";
+    return station.genre === "Noticias" ? "news" : "music";
+  }
+
+  function stationRegion(station) {
+    if (isCustom(station)) return "custom";
+    const tags = station.tags || [];
+    return Object.keys(REGION_LABELS).find((name) => tags.includes(name)) || "national";
+  }
+
+  function matchesRegion(station) {
+    if (regionFilter === "all") return true;
+    if (regionFilter === "granada") return (station.tags || []).includes("Granada");
+    return stationRegion(station) === regionFilter;
+  }
+
   function visible() {
-    const q = query.trim().toLowerCase();
-    return all().filter((s) => {
-      if (onlyFavs && !favs.has(s.id)) return false;
-      if (tag !== "Todas" && !(s.tags || []).includes(tag)) return false;
-      return !q || [s.name, s.desc, ...(s.tags || [])].join(" ").toLowerCase().includes(q);
+    const q = normalizeSearch(query);
+    return all().filter((station) => {
+      if (onlyFavs && !favs.has(station.id)) return false;
+      if (contentFilter !== "all" && stationType(station) !== contentFilter) return false;
+      if (genreFilter !== "all" && station.genre !== genreFilter) return false;
+      if (!matchesRegion(station)) return false;
+      return !q || normalizeSearch([station.name, station.desc, station.genre,
+        REGION_LABELS[stationRegion(station)] || stationRegion(station),
+        ...(station.tags || [])].join(" ")).includes(q);
     });
   }
 
+  function fillFilterSelect(selector, choices, selected) {
+    const node = $(selector);
+    node.replaceChildren(...choices.map(([value, label]) =>
+      el("option", { value, text: label })));
+    node.value = selected;
+  }
+
+  // Rebuild choices only after changing station inventory or content type.
+  // Every genre option corresponds to a real station in the current type.
+  function renderFilterOptions() {
+    const eligible = all().filter((station) =>
+      contentFilter === "all" || stationType(station) === contentFilter);
+    const genres = [...new Set(eligible.map((station) => station.genre).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "es"));
+    if (genreFilter !== "all" && !genres.includes(genreFilter)) genreFilter = "all";
+    fillFilterSelect("#filterGenre", [["all", "Todos los géneros"],
+      ...genres.map((name) => [name, name])], genreFilter);
+
+    const regions = [...new Set(all().map(stationRegion))];
+    const choices = [["all", "Todas las zonas"]];
+    if (regions.includes("national")) choices.push(["national", "Ámbito nacional"]);
+    for (const name of Object.keys(REGION_LABELS)
+      .filter((name) => regions.includes(name))
+      .sort((a, b) => REGION_LABELS[a].localeCompare(REGION_LABELS[b], "es"))) {
+      choices.push([name, REGION_LABELS[name]]);
+      if (name === "Andalucía" && all().some((s) => (s.tags || []).includes("Granada"))) {
+        choices.push(["granada", "Granada · emisoras locales"]);
+      }
+    }
+    if (regions.includes("custom")) choices.push(["custom", "Mis emisoras"]);
+    if (regionFilter !== "all" && !choices.some(([value]) => value === regionFilter)) {
+      regionFilter = "all";
+    }
+    fillFilterSelect("#filterRegion", choices, regionFilter);
+  }
+
+  function isUnfiltered() {
+    return contentFilter === "all" && genreFilter === "all" && regionFilter === "all"
+      && !onlyFavs && !query.trim();
+  }
+
+  function activePreset() {
+    if (onlyFavs || query.trim() || genreFilter !== "all") return "";
+    if (contentFilter === "all" && regionFilter === "all") return "all";
+    if (contentFilter === "music" && regionFilter === "all") return "music";
+    if (contentFilter === "news" && regionFilter === "all") return "news";
+    if (contentFilter === "all" && regionFilter === "granada") return "granada";
+    return "";
+  }
+
+  function syncFilters(total = visible().length) {
+    $("#filterType").value = contentFilter;
+    $("#filterGenre").value = genreFilter;
+    $("#filterRegion").value = regionFilter;
+    $("#btnFav").setAttribute("aria-pressed", String(onlyFavs));
+    const preset = activePreset();
+    document.querySelectorAll("#chips button").forEach((button) =>
+      button.setAttribute("aria-pressed", String(button.dataset.preset === preset)));
+    $("#clearFilters").hidden = isUnfiltered();
+    const maximum = all().length;
+    $("#filterCount").textContent = isUnfiltered()
+      ? maximum + " emisoras disponibles"
+      : "Mostrando " + total + " de " + maximum + " emisoras";
+  }
+
+  function resetFilters() {
+    contentFilter = "all";
+    genreFilter = "all";
+    regionFilter = "all";
+    query = "";
+    onlyFavs = false;
+    $("#q").value = "";
+    renderFilterOptions();
+  }
+
   function renderChips() {
-    const tags = ["Todas", ...new Set(all().flatMap((s) => s.tags || []))];
-    if (!tags.includes(tag)) tag = "Todas";
-    $("#chips").replaceChildren(...tags.map((t) =>
-      el("button", { type: "button", "data-tag": t, "aria-pressed": String(t === tag), text: t })));
+    $("#chips").replaceChildren(...QUICK_FILTERS.map((item) =>
+      el("button", { type: "button", "data-preset": item.id,
+        "aria-pressed": String(item.id === activePreset()), text: item.title })));
   }
 
   function renderList() {
@@ -181,8 +296,10 @@
         "aria-label": `Favorita: ${s.name}`, title: "Favorita" }, icon("i-star")));
       return li;
     });
-    $("#list").replaceChildren(...(items.length ? items : [el("li", { class: "empty", text: "No hay emisoras que coincidan." })]));
+    $("#list").replaceChildren(...(items.length ? items :
+      [el("li", { class: "empty", text: "No hay emisoras con estos filtros. Prueba otra selección o pulsa «Limpiar filtros»." })]));
     syncList();
+    syncFilters(items.length);
   }
 
   /* ---------- personalized home ---------- */
@@ -599,18 +716,41 @@
       favs.delete(s.id);
       recents = recents.filter((id) => id !== s.id);
       save(KEY.custom, custom); save(KEY.favs, [...favs]); save(KEY.recents, recents);
-      renderChips(); renderList(); renderPersonal();
+      renderFilterOptions(); renderChips(); renderList(); renderPersonal();
     } else if (e.target.closest(".st-main")) {
       if (current && current.id === s.id) toggle(); else connect(s);
     }
   });
 
   $("#chips").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-tag]");
-    if (!b) return;
-    tag = b.dataset.tag;
-    document.querySelectorAll("#chips button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    const button = e.target.closest("[data-preset]");
+    if (!button) return;
+    const preset = button.dataset.preset;
+    if (!QUICK_FILTERS.some((item) => item.id === preset)) return;
+    resetFilters();
+    if (preset === "music" || preset === "news") contentFilter = preset;
+    if (preset === "granada") regionFilter = "granada";
+    renderFilterOptions();
     renderList();
+  });
+  $("#filterType").addEventListener("change", (e) => {
+    contentFilter = e.target.value;
+    if (!["all", "music", "news", "custom"].includes(contentFilter)) contentFilter = "all";
+    renderFilterOptions();
+    renderList();
+  });
+  $("#filterGenre").addEventListener("change", (e) => {
+    genreFilter = e.target.value;
+    renderList();
+  });
+  $("#filterRegion").addEventListener("change", (e) => {
+    regionFilter = e.target.value;
+    renderList();
+  });
+  $("#clearFilters").addEventListener("click", () => {
+    resetFilters();
+    renderList();
+    $("#q").focus?.();
   });
   $("#q").addEventListener("input", (e) => { query = e.target.value; renderList(); });
   $("#btnFav").addEventListener("click", (e) => {
@@ -630,12 +770,8 @@
     else connect(station);
   });
   $("#personalShowFavorites").addEventListener("click", () => {
+    resetFilters();
     onlyFavs = true;
-    tag = "Todas";
-    query = "";
-    $("#q").value = "";
-    $("#btnFav").setAttribute("aria-pressed", "true");
-    renderChips();
     renderList();
     $("#list").scrollIntoView?.({ block: "start",
       behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
@@ -699,13 +835,14 @@
       type: /\.m3u8(\?|$)/i.test(url) ? "hls" : "audio" };
     custom.push(st);
     save(KEY.custom, custom);
-    renderChips(); renderList();
+    renderFilterOptions(); renderChips(); renderList();
     connect(st);
   });
 
   /* ---------- boot ---------- */
   syncTheme();
   route();
+  renderFilterOptions();
   renderChips();
   renderList();
   const last = all().find((s) => s.id === load(KEY.last, null));
