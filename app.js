@@ -186,7 +186,7 @@
       if (!s) return;
       const isCur = !!current && current.id === s.id;
       const live = isCur && state === "live";
-      const busy = isCur && (state === "live" || state === "connecting");
+      const busy = isCur && ["live", "connecting", "buffering", "retrying"].includes(state);
       li.classList.toggle("is-current", isCur);
       li.classList.toggle("is-live", live);
       li.querySelector(".st-main use").setAttribute("href", busy ? "#i-stop" : "#i-play");
@@ -195,9 +195,25 @@
     });
   }
 
-  /* ---------- player ---------- */
+  /* ---------- player and automatic recovery ---------- */
+  // Retries are bounded: never hammer a broadcaster, and never restart after
+  // an explicit Stop, a system Pause, or a station switch.
+  const RETRY_DELAYS_MS = [2000, 5000, 10000, 20000, 30000];
+  const BUFFER_TIMEOUT_MS = 15000;
+  const STABLE_PLAY_MS = 60000;
+  let retryCount = 0;
+  let retryTimer = 0;
+  let stallTimer = 0;
+  let wantsPlayback = false;
+  let lastPlayingAt = 0;
+
+  function clearPlaybackTimers() {
+    clearTimeout(timer); timer = 0;
+    clearTimeout(retryTimer); retryTimer = 0;
+    clearTimeout(stallTimer); stallTimer = 0;
+  }
+
   // Listening statistics use media playback events, not button presses.
-  // Genre is explicit for built-in stations; private stations are grouped as such.
   function publishPlayback(playing = state === "live" && !audio.paused) {
     document.dispatchEvent(new CustomEvent("ondalibre:playback", {
       detail: {
@@ -210,18 +226,20 @@
     }));
   }
 
-  function setState(next, text) {
+  function setState(next, label) {
     state = next;
-    const label = text || { idle: "Parado", connecting: "Conectando…", live: "En directo", paused: "Pausado", error: "Sin señal" }[next];
+    const labels = {
+      idle: "Parado", connecting: "Conectando…", buffering: "Cargando…",
+      retrying: "Reconectando…", live: "En directo",
+      paused: "Pausado", error: "Sin señal"
+    };
     const st = $("#nowState");
-    st.textContent = label;
-    // Reflect real playback, not merely a user click or pending connection.
-    $(".player").dataset.playing = String(next === "live" && !audio.paused);
+    st.textContent = label || labels[next];
     st.dataset.kind = next;
-    const busy = next === "live" || next === "connecting";
+    $(".player").dataset.playing = String(next === "live" && !audio.paused);
+    const busy = ["live", "connecting", "buffering", "retrying"].includes(next);
     $("#playIco").setAttribute("href", busy ? "#i-stop" : "#i-play");
     $("#play").setAttribute("aria-label", busy ? "Detener" : "Reproducir");
-    // The OS must not report an active radio while the stream is merely connecting.
     if ("mediaSession" in navigator) {
       navigator.mediaSession.playbackState = next === "live" && !audio.paused ? "playing" : "paused";
     }
@@ -230,13 +248,18 @@
   }
 
   function teardown() {
-    clearTimeout(timer);
-    needsGesture = false;
+    clearPlaybackTimers();
     attempt++;
-    if (hls) { hls.destroy(); hls = null; }
+    audio.onerror = null; // disconnect callbacks from the previous media source
+    if (hls) {
+      const previous = hls;
+      hls = null;
+      previous.destroy();
+    }
     audio.pause();
     audio.removeAttribute("src");
     audio.load();
+    needsGesture = false;
   }
 
   function select(station) {
@@ -249,91 +272,123 @@
     playerArt.hidden = false;
   }
 
-  /* anonymous = CORS mode without credentials: the stream server's cookies are neither sent nor stored. */
-  // A few broadcasters (currently Kiss FM) use signed streaming redirects that
-  // cannot be played in CORS mode. They use ordinary HTML audio without CORS.
-  // This may allow the broadcaster to read/set its own third-party cookies.
-  function connect(station, anonymous = station.cors !== "no-cors", allowContinuous = true) {
+  function scheduleRetry() {
+    if (!wantsPlayback || !current || state === "retrying") return;
+    // A long uninterrupted session counts as a successful recovery. Brief
+    // success followed by a new failure still consumes the retry budget.
+    if (lastPlayingAt && Date.now() - lastPlayingAt >= STABLE_PLAY_MS) retryCount = 0;
+
+    if (retryCount >= RETRY_DELAYS_MS.length) {
+      wantsPlayback = false;
+      teardown();
+      setState("error", "Sin señal. Pulsa Reproducir.");
+      return;
+    }
+    const delay = RETRY_DELAYS_MS[retryCount++];
+    const station = current;
+    teardown();
+    if (navigator.onLine === false) {
+      setState("retrying", "Sin Internet · esperando conexión");
+      return; // the online event will retry immediately
+    }
+    const seconds = Math.round(delay / 1000);
+    setState("retrying", "Reconectando " + retryCount + "/" + RETRY_DELAYS_MS.length + " · " + seconds + " s");
+    retryTimer = setTimeout(() => {
+      retryTimer = 0;
+      if (!wantsPlayback || state !== "retrying" || current !== station) return;
+      connect(station, station.cors !== "no-cors", true, true);
+    }, delay);
+  }
+
+  /* anonymous = CORS mode without credentials. Kiss FM uses ordinary media mode. */
+  function connect(station, anonymous = station.cors !== "no-cors", allowContinuous = true, recovering = false) {
+    if (!recovering) { retryCount = 0; lastPlayingAt = 0; }
+    wantsPlayback = true;
     teardown();
     const me = attempt;
     select(station);
-    setState("connecting");
 
-    // Native HLS is handled by the OS. On other mobiles, prefer a
-    // broadcaster-published continuous MP3/AAC alternative when available:
-    // JavaScript-driven HLS fetching may be suspended after screen lock.
+    if (navigator.onLine === false) {
+      scheduleRetry();
+      return;
+    }
+    setState("connecting", recovering ? "Reconectando… (" + retryCount + "/" + RETRY_DELAYS_MS.length + ")" : null);
+
+    // Prefer a continuous MP3/AAC alternative when native HLS is unavailable.
     const nativeHls = !!audio.canPlayType("application/vnd.apple.mpegurl");
     const originalHls = station.type === "hls" || /\.m3u8(\?|$)/i.test(station.url);
     const useContinuous = allowContinuous && originalHls && !nativeHls
-      && typeof station.backgroundUrl === "string"
-      && isHttpUrl(station.backgroundUrl)
+      && typeof station.backgroundUrl === "string" && isHttpUrl(station.backgroundUrl)
       && !/\.m3u8(\?|$)/i.test(station.backgroundUrl);
     const streamUrl = useContinuous ? station.backgroundUrl : station.url;
     const isHls = originalHls && !useContinuous;
 
     const fail = () => {
-      if (me !== attempt) return;
-      // If the mobile-friendly alternative is blocked/offline, retry the
-      // original station stream once rather than making the radio unusable.
-      if (useContinuous) { connect(station, anonymous, false); return; }
-      // Only for stations the listener added: retry once without CORS for servers that lack CORS headers.
-      if (anonymous && isCustom(station) && !isHls) { connect(station, false); return; }
-      teardown();
-      setState("error", station.site ? "Sin señal. Prueba más tarde o en la web oficial." : "Sin señal. Revisa la dirección.");
+      if (me !== attempt || !wantsPlayback || state === "paused") return;
+      // Try the broadcaster's original format before consuming a retry.
+      if (useContinuous) { connect(station, anonymous, false, true); return; }
+      // User-added streams may lack CORS; preserve their existing fallback.
+      if (anonymous && isCustom(station) && !isHls) { connect(station, false, false, true); return; }
+      scheduleRetry();
     };
     const startPlayback = () => {
-      if (me !== attempt) return;
+      if (me !== attempt || !wantsPlayback || state === "paused") return;
       audio.play().catch((err) => {
-        if (me !== attempt || (err && err.name === "AbortError")) return;
+        if (me !== attempt || !wantsPlayback || (err && err.name === "AbortError")) return;
         if (err && err.name === "NotAllowedError") {
-          // The HLS manifest is loaded asynchronously. Some browsers require
-          // a fresh user gesture, so keep the media attached for the next tap.
-          clearTimeout(timer);
+          // Never retry autoplay failures without a fresh user interaction.
+          wantsPlayback = false;
+          clearPlaybackTimers();
           needsGesture = true;
-          setState("idle", "Pulsa Reproducir otra vez");
+          setState("paused", "Pulsa Reproducir otra vez");
           return;
         }
         fail();
       });
     };
+
     if (anonymous) audio.crossOrigin = "anonymous"; else audio.removeAttribute("crossorigin");
 
-    // Publish artwork and station identity before play(), so the OS can
-    // display lock-screen media controls as soon as the stream becomes active.
+    // Register lock-screen metadata before calling play().
     if ("mediaSession" in navigator && window.MediaMetadata) {
       try {
         navigator.mediaSession.metadata = new MediaMetadata({
           title: station.name, artist: "En directo", album: "OndaLibre",
           artwork: [192, 512].map((n) => ({
-            src: new URL(`assets/icon-${n}.png`, document.baseURI).href,
-            sizes: `${n}x${n}`, type: "image/png"
+            src: new URL("assets/icon-" + n + ".png", document.baseURI).href,
+            sizes: n + "x" + n, type: "image/png"
           }))
         });
-      } catch { /* unsupported metadata does not block radio playback */ }
+      } catch { /* unsupported metadata should not block playback */ }
     }
 
+    audio.onerror = fail;
+    timer = setTimeout(fail, 20000);
     if (isHls && !nativeHls && window.Hls && window.Hls.isSupported()) {
       hls = new window.Hls();
-      hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data.fatal) fail(); });
-      // Do not call play() before hls.js has attached a supported media source.
+      hls.on(window.Hls.Events.ERROR, (_evt, data) => { if (data && data.fatal) fail(); });
       hls.on(window.Hls.Events.MANIFEST_PARSED, startPlayback);
       hls.attachMedia(audio);
       hls.loadSource(streamUrl);
     } else {
-      audio.src = streamUrl;            // Direct MP3/AAC or OS-native HLS
+      audio.src = streamUrl;
       startPlayback();
     }
-    audio.onerror = fail;
-    timer = setTimeout(fail, 20000);
   }
 
-  function stop() { teardown(); setState("idle"); }
+  function stop() {
+    wantsPlayback = false;
+    retryCount = 0;
+    lastPlayingAt = 0;
+    teardown();
+    setState("idle");
+  }
 
-  // OS lock-screen pause and temporary audio interruptions should preserve
-  // the stream, so the phone's Play control can resume it without navigation.
+  // Preserve audio/HLS when the OS or headset pauses; never auto-unpause calls.
   function pausePlayback() {
-    if (!current || (state !== "live" && state !== "connecting")) return;
-    clearTimeout(timer);
+    if (!current || !["live", "connecting", "buffering", "retrying"].includes(state)) return;
+    wantsPlayback = false;
+    clearPlaybackTimers();
     audio.pause();
     setState("paused");
   }
@@ -341,63 +396,92 @@
   function resume() {
     if (!current || (state === "live" && !audio.paused)) return;
     if (state === "connecting" && !audio.paused) return;
+    // A deliberate Play after exhausted retries starts a fresh budget.
+    if (state === "retrying" || state === "error" || state === "idle") {
+      connect(current);
+      return;
+    }
     const canResume = (state === "paused" || needsGesture)
       && (hls || audio.currentSrc || audio.getAttribute("src"));
     if (!canResume) { connect(current); return; }
 
+    wantsPlayback = true;
     needsGesture = false;
     const me = attempt;
-    clearTimeout(timer);
+    clearPlaybackTimers();
     setState("connecting", "Reanudando…");
+    timer = setTimeout(() => {
+      if (me === attempt && wantsPlayback && state === "connecting") scheduleRetry();
+    }, 20000);
     audio.play().catch((err) => {
-      if (me !== attempt || (err && err.name === "AbortError")) return;
-      clearTimeout(timer);
+      if (me !== attempt || !wantsPlayback || (err && err.name === "AbortError")) return;
       if (err && err.name === "NotAllowedError") {
+        wantsPlayback = false;
+        clearPlaybackTimers();
         needsGesture = true;
-        setState("paused", "Pulsa Reproducir para continuar");
+        setState("paused", "Pulsa Reproducir otra vez");
       } else {
-        teardown();
-        setState("error", "No se pudo reanudar. Pulsa Reproducir.");
+        scheduleRetry();
       }
     });
-    timer = setTimeout(() => {
-      if (me !== attempt || state !== "connecting") return;
-      teardown();
-      setState("error", "Sin señal. Pulsa Reproducir.");
-    }, 20000);
   }
 
   function toggle() {
     if (!current) return;
-    if (state === "live" || state === "connecting") { stop(); return; }
-    resume();
+    if (["live", "connecting", "buffering", "retrying"].includes(state)) stop();
+    else resume();
   }
+
   function step(dir) {
     const list = visible().length ? visible() : all();
     const i = current ? list.findIndex((s) => s.id === current.id) : -1;
     connect(list[(i + dir + list.length) % list.length]);
   }
 
+  function bufferWatchdog() {
+    if (!wantsPlayback || !["live", "buffering"].includes(state)) return;
+    setState("buffering", "Cargando…");
+    clearTimeout(stallTimer);
+    stallTimer = setTimeout(() => {
+      stallTimer = 0;
+      if (wantsPlayback && state === "buffering") scheduleRetry();
+    }, BUFFER_TIMEOUT_MS);
+  }
+
   audio.addEventListener("playing", () => {
-    if (audio.paused) return;
-    clearTimeout(timer);
+    if (!wantsPlayback || audio.paused) return;
+    clearTimeout(timer); timer = 0;
+    clearTimeout(stallTimer); stallTimer = 0;
+    lastPlayingAt = Date.now();
     setState("live");
   });
-  audio.addEventListener("waiting", () => {
-    if (state === "live") {
-      $("#nowState").textContent = "Cargando…";
-      $(".player").dataset.playing = "false";
-      publishPlayback(false);
+  audio.addEventListener("waiting", bufferWatchdog);
+  audio.addEventListener("stalled", bufferWatchdog);
+  audio.addEventListener("ended", () => {
+    if (wantsPlayback && ["live", "buffering"].includes(state)) scheduleRetry();
+  });
+  audio.addEventListener("pause", () => {
+    if (state === "live" && audio.paused) {
+      wantsPlayback = false;
+      clearPlaybackTimers();
+      setState("paused");
     }
   });
-  audio.addEventListener("stalled", () => {
-    $(".player").dataset.playing = "false";
-    publishPlayback(false);
+
+  window.addEventListener("offline", () => {
+    if (!wantsPlayback || !current) return;
+    if (state === "retrying") {
+      clearTimeout(retryTimer); retryTimer = 0;
+      setState("retrying", "Sin Internet · esperando conexión");
+    } else if (["live", "buffering", "connecting"].includes(state)) {
+      scheduleRetry();
+    }
   });
-  // Pausing from a headset, call or lock screen must not destroy the stream.
-  // Ignore queued pause events from teardown/reconnection, when state is not live.
-  audio.addEventListener("pause", () => {
-    if (state === "live" && audio.paused) setState("paused");
+  window.addEventListener("online", () => {
+    if (wantsPlayback && current && state === "retrying") {
+      clearTimeout(retryTimer); retryTimer = 0;
+      connect(current, current.cors !== "no-cors", true, true);
+    }
   });
 
   if ("mediaSession" in navigator) {
