@@ -123,9 +123,9 @@ function validateProject() {
       assert(st.tags.includes("Nacional") ||
         st.tags.some(tag => allowedRegions.includes(tag)),
         "Missing expansion area for " + st.id);
-      if (st.type === "hls") assert(/\\.m3u8(?:[?#]|$)/.test(st.url),
+      if (st.type === "hls") assert(/\.m3u8(?:[?#]|$)/.test(st.url),
         "Invalid HLS playlist for " + st.id);
-      if (st.type === "audio") assert(!/\\.m3u8(?:[?#]|$)/.test(st.url),
+      if (st.type === "audio") assert(!/\.m3u8(?:[?#]|$)/.test(st.url),
         "Unexpected HLS for audio station " + st.id);
     }
   });
