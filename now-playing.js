@@ -112,6 +112,8 @@
 
     if (!live) {
       if (kind === "paused") show("Emisión en pausa", current.name);
+      else if (kind === "retrying") show("Reconectando con la radio…", current.name);
+      else if (kind === "buffering") show("Recuperando la emisión…", current.name);
       else if (kind === "connecting") show("Conectando con la radio…", current.name);
       else if (kind === "error") show("No hay señal", "Comprueba la emisión");
       else if (kind === "live") show("Recuperando el audio…", current.name);
