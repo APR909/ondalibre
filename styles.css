@@ -522,3 +522,96 @@ dialog .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20
 @media (prefers-reduced-motion: reduce) {
   .btn, .playbtn, .station-art { transition: none; }
 }
+
+
+/* ---------- personalized home: local favorites and listening history ---------- */
+.personal-home {
+  margin: 20px 0 28px;
+  padding: 18px;
+  border: var(--bw) solid var(--line);
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 80% 90% at 0% 0%, var(--glow-purple), transparent 82%),
+    var(--surface);
+}
+.personal-intro {
+  display: flex; align-items: end; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px 20px; margin-bottom: 16px;
+}
+.personal-eyebrow {
+  margin: 0 0 4px; color: var(--accent-2);
+  font-size: .65rem; font-weight: 800; letter-spacing: .1em;
+}
+.personal-intro h2 {
+  margin: 0; font-size: 1.15rem; font-weight: 750; letter-spacing: -.02em;
+}
+.personal-explainer {
+  margin: 0; color: var(--muted); font-size: .78rem;
+}
+.personal-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+}
+.personal-group { min-width: 0; }
+.personal-group-head {
+  min-height: 27px; display: flex; align-items: baseline;
+  justify-content: space-between; gap: 8px; margin-bottom: 7px;
+}
+.personal-group-head h3 {
+  font-size: .86rem; font-weight: 750; line-height: 1.25;
+  margin: 0;
+}
+.personal-link {
+  flex: none; color: var(--accent); font-size: .75rem;
+  font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+  border-radius: 3px; padding: 3px;
+}
+.personal-link:hover { color: var(--accent-2); }
+.personal-items { display: grid; gap: 5px; }
+.personal-empty {
+  margin: 0; padding: 13px 10px; border: var(--bw) dashed var(--line);
+  border-radius: 8px; color: var(--muted); font-size: .79rem;
+  line-height: 1.5; min-height: 64px;
+}
+.personal-quick {
+  display: flex; align-items: center; width: 100%; min-width: 0;
+  text-align: left; gap: 10px; padding: 7px;
+  border-radius: 9px; border: var(--bw) solid var(--line);
+  background: var(--bg); color: var(--text);
+  transition: border-color .15s ease, background .15s ease;
+}
+.personal-quick:hover, .personal-quick:focus-visible {
+  border-color: var(--accent); background: var(--surface-2);
+}
+.personal-quick[data-active="true"] {
+  border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent);
+}
+.personal-quick .station-art {
+  width: 34px; height: 34px; border-radius: 8px;
+}
+.personal-quick-text {
+  display: flex; flex-direction: column; flex: 1; min-width: 0;
+  gap: 2px;
+}
+.personal-quick-name {
+  display: block; font-weight: 670; font-size: .82rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.personal-quick-sub {
+  display: block; font-size: .72rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.personal-quick[data-active="true"] .personal-quick-sub { color: var(--accent); }
+.personal-quick-icon { flex: none; display: grid; place-items: center; color: var(--accent); }
+.personal-quick-icon svg { width: 15px; height: 15px; }
+#list { scroll-margin-top: 14px; }
+@media (max-width: 600px) {
+  .personal-home { margin: 16px 0 22px; padding: 13px; }
+  .personal-grid { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+  .personal-intro { margin-bottom: 14px; align-items: start; }
+  .personal-group-head { min-height: 25px; }
+  .personal-quick { min-height: 51px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .personal-quick { transition: none; }
+}
