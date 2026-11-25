@@ -42,7 +42,14 @@ test("homepage, radio directory, and accessibility essentials render", async ({ 
   await expect(page.getByRole("heading", { name: "Escuchadas recientemente" })).toBeVisible();
   await expect(page.locator("#personalFavorites .personal-empty")).toBeVisible();
   await expect(page.locator("#personalRecents .personal-empty")).toBeVisible();
-  await expect(page.getByRole("slider", { name: "Volumen" })).toHaveCount(1);
+  // Mobile browsers use hardware volume buttons, so the slider is hidden there.
+  // It remains in the DOM for persisted settings and desktop rendering.
+  await expect(page.locator("#vol")).toHaveCount(1);
+  if (test.info().project.name === "android-viewport-chromium") {
+    await expect(page.locator("#vol")).toBeHidden();
+  } else {
+    await expect(page.getByRole("slider", { name: "Volumen" })).toBeVisible();
+  }
   const duplicateIds = await page.evaluate(() => {
     const ids = [...document.querySelectorAll("[id]")].map(node => node.id);
     return ids.filter((id,i) => ids.indexOf(id)!==i);
